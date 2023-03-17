@@ -39,9 +39,9 @@
 #include "nespad.h"
 #endif
 
-#include "ff.h"
+//#include "ff.h"
 #include "fgraphics.h"
-
+#include "hardware.hpp"
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
 #define ERRORMESSAGESIZE 40
@@ -49,7 +49,7 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 //util::ExclusiveProc exclProc_;
 char *ErrorMessage;
 bool isFatalError = false;
-static FATFS fs;
+// static FATFS fs;
 char *romName;
 //pimoroni::RGBLED led(6, 7, 8);
 namespace
@@ -195,95 +195,96 @@ uint32_t getCurrentNVRAMAddr()
 
 void saveNVRAM()
 {
-    char pad[FF_MAX_LFN];
+    // char pad[FF_MAX_LFN];
 
-    if (!SRAMwritten)
-    {
-        printf("SRAM not updated.\n");
-        return;
-    }
-    snprintf(pad, FF_MAX_LFN, "%s/%s.SAV", GAMESAVEDIR, romName);
-    printf("save SRAM to %s\n", pad);
-    FIL fil;
-    FRESULT fr;
-    fr = f_open(&fil, pad, FA_CREATE_ALWAYS | FA_WRITE);
-    if (fr != FR_OK)
-    {
-        snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot open save file: %d", fr);
-        printf("%s\n", ErrorMessage);
-        return;
-    }
-    size_t bytesWritten;
-    fr = f_write(&fil, SRAM, SRAM_SIZE, &bytesWritten);
-    if (bytesWritten < SRAM_SIZE)
-    {
-        snprintf(ErrorMessage, ERRORMESSAGESIZE, "Error writing save: %d %d/%d written", fr, bytesWritten, SRAM_SIZE);
-        printf("%s\n", ErrorMessage);
-    }
-    f_close(&fil);
-    printf("done\n");
-    SRAMwritten = false;
+    // if (!SRAMwritten)
+    // {
+    //     printf("SRAM not updated.\n");
+    //     return;
+    // }
+    // snprintf(pad, FF_MAX_LFN, "%s/%s.SAV", GAMESAVEDIR, romName);
+    // printf("save SRAM to %s\n", pad);
+    // FIL fil;
+    // FRESULT fr;
+    // fr = f_open(&fil, pad, FA_CREATE_ALWAYS | FA_WRITE);
+    // if (fr != FR_OK)
+    // {
+    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot open save file: %d", fr);
+    //     printf("%s\n", ErrorMessage);
+    //     return;
+    // }
+    // size_t bytesWritten;
+    // fr = f_write(&fil, SRAM, SRAM_SIZE, &bytesWritten);
+    // if (bytesWritten < SRAM_SIZE)
+    // {
+    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Error writing save: %d %d/%d written", fr, bytesWritten, SRAM_SIZE);
+    //     printf("%s\n", ErrorMessage);
+    // }
+    // f_close(&fil);
+    // printf("done\n");
+    // SRAMwritten = false;
 }
 
 bool loadNVRAM()
 {
-    char pad[FF_MAX_LFN];
-    FILINFO fno;
-    bool ok = false;
-    snprintf(pad, FF_MAX_LFN, "%s/%s.SAV", GAMESAVEDIR, romName);
-    FIL fil;
-    FRESULT fr;
+    // char pad[FF_MAX_LFN];
+    // FILINFO fno;
+    // bool ok = false;
+    // snprintf(pad, FF_MAX_LFN, "%s/%s.SAV", GAMESAVEDIR, romName);
+    // FIL fil;
+    // FRESULT fr;
 
-    size_t bytesRead;
-    if (auto addr = getCurrentNVRAMAddr())
-    {
-        fr = f_stat(pad, &fno);
-        if (fr == FR_NO_FILE)
-        {
-            printf("Save file not found, load SRAM from flash %x\n", addr);
-            memcpy(SRAM, reinterpret_cast<void *>(addr), SRAM_SIZE);
-            ok = true;
-        }
-        else
-        {
-            if (fr == FR_OK)
-            {
-                printf("Loading save file %s\n", pad);
-                fr = f_open(&fil, pad, FA_READ);
-                if (fr == FR_OK)
-                {
-                    fr = f_read(&fil, SRAM, SRAM_SIZE, &bytesRead);
-                    if (fr == FR_OK)
-                    {
-                        printf("Savefile read from disk\n");
-                        ok = true;
-                    }
-                    else
-                    {
-                        snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot read save file: %d %d/%d read", fr, bytesRead, SRAM_SIZE);
-                        printf("%s\n", ErrorMessage);
-                    }
-                }
-                else
-                {
-                    snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot open save file: %d", fr);
-                    printf("%s\n", ErrorMessage);
-                }
-                f_close(&fil);
-            }
-            else
-            {
-                snprintf(ErrorMessage, ERRORMESSAGESIZE, "f_stat() failed on save file: %d", fr);
-                printf("%s\n", ErrorMessage);
-            }
-        }
-    }
-    else
-    {
-        ok = true;
-    }
-    SRAMwritten = false;
-    return ok;
+    // size_t bytesRead;
+    // if (auto addr = getCurrentNVRAMAddr())
+    // {
+    //     fr = f_stat(pad, &fno);
+    //     if (fr == FR_NO_FILE)
+    //     {
+    //         printf("Save file not found, load SRAM from flash %x\n", addr);
+    //         memcpy(SRAM, reinterpret_cast<void *>(addr), SRAM_SIZE);
+    //         ok = true;
+    //     }
+    //     else
+    //     {
+    //         if (fr == FR_OK)
+    //         {
+    //             printf("Loading save file %s\n", pad);
+    //             fr = f_open(&fil, pad, FA_READ);
+    //             if (fr == FR_OK)
+    //             {
+    //                 fr = f_read(&fil, SRAM, SRAM_SIZE, &bytesRead);
+    //                 if (fr == FR_OK)
+    //                 {
+    //                     printf("Savefile read from disk\n");
+    //                     ok = true;
+    //                 }
+    //                 else
+    //                 {
+    //                     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot read save file: %d %d/%d read", fr, bytesRead, SRAM_SIZE);
+    //                     printf("%s\n", ErrorMessage);
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot open save file: %d", fr);
+    //                 printf("%s\n", ErrorMessage);
+    //             }
+    //             f_close(&fil);
+    //         }
+    //         else
+    //         {
+    //             snprintf(ErrorMessage, ERRORMESSAGESIZE, "f_stat() failed on save file: %d", fr);
+    //             printf("%s\n", ErrorMessage);
+    //         }
+    //     }
+    // }
+    // else
+    // {
+    //     ok = true;
+    // }
+    // SRAMwritten = false;
+    // return ok;
+    return true;
 }
 
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
@@ -736,59 +737,60 @@ void __not_in_flash_func(core1_main)()
 
 bool initSDCard()
 {
-    FRESULT fr;
-    TCHAR str[40];
-    sleep_ms(1000);
+    // FRESULT fr;
+    // TCHAR str[40];
+    // sleep_ms(1000);
 
-    printf("Mounting SDcard");
-    fr = f_mount(&fs, "", 1);
-    if (fr != FR_OK)
-    {
-       snprintf(ErrorMessage, ERRORMESSAGESIZE, "SD card mount error: %d", fr);
-        printf("%s\n", ErrorMessage);
-        return false;
-    }
-    printf("\n");
+    // printf("Mounting SDcard");
+    // fr = f_mount(&fs, "", 1);
+    // if (fr != FR_OK)
+    // {
+    //    snprintf(ErrorMessage, ERRORMESSAGESIZE, "SD card mount error: %d", fr);
+    //     printf("%s\n", ErrorMessage);
+    //     return false;
+    // }
+    // printf("\n");
 
-    fr = f_chdir("/");
-    if (fr != FR_OK)
-    {
-        snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot change dir to / : %d", fr);
-        printf("%s\n", ErrorMessage);
-        return false;
-    }
-    // for f_getcwd to work, set
-    //   #define FF_FS_RPATH		2
-    // in drivers/fatfs/ffconf.h
-    fr = f_getcwd(str, sizeof(str));
-    if (fr != FR_OK)
-    {
-        snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot get current dir: %d", fr);
-        printf("%s\n", ErrorMessage);
-        return false;
-    }
-    printf("Current directory: %s\n", str);
-    printf("Creating directory %s\n", GAMESAVEDIR);
-    fr = f_mkdir(GAMESAVEDIR);
-    if (fr != FR_OK)
-    {
-        if (fr == FR_EXIST)
-        {
-            printf("Directory already exists.\n");
-        }
-        else
-        {
-            snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot create dir %s: %d", GAMESAVEDIR, fr);
-            printf("%s\n", ErrorMessage);
-            return false;
-        }
-    }
+    // fr = f_chdir("/");
+    // if (fr != FR_OK)
+    // {
+    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot change dir to / : %d", fr);
+    //     printf("%s\n", ErrorMessage);
+    //     return false;
+    // }
+    // // for f_getcwd to work, set
+    // //   #define FF_FS_RPATH		2
+    // // in drivers/fatfs/ffconf.h
+    // fr = f_getcwd(str, sizeof(str));
+    // if (fr != FR_OK)
+    // {
+    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot get current dir: %d", fr);
+    //     printf("%s\n", ErrorMessage);
+    //     return false;
+    // }
+    // printf("Current directory: %s\n", str);
+    // printf("Creating directory %s\n", GAMESAVEDIR);
+    // fr = f_mkdir(GAMESAVEDIR);
+    // if (fr != FR_OK)
+    // {
+    //     if (fr == FR_EXIST)
+    //     {
+    //         printf("Directory already exists.\n");
+    //     }
+    //     else
+    //     {
+    //         snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot create dir %s: %d", GAMESAVEDIR, fr);
+    //         printf("%s\n", ErrorMessage);
+    //         return false;
+    //     }
+    // }
     return true;
 }
-
+using namespace picosystem;
 int main()
 {
 
+    _init_hardware();
     char selectedRom[80];
     romName = selectedRom;
   

@@ -55,26 +55,26 @@ pico_sdk_init()
 add_subdirectory(drivers/fatfs)
 add_subdirectory(drivers/sdcard)
 add_subdirectory(drivers/fgraphics)
-add_subdirectory(drivers/rgbled)
+#add_subdirectory(drivers/rgbled)
 
 
 # Adafruit Micro-SD breakout board+ https://www.adafruit.com/product/254 
-set(SD_CS "5" CACHE STRING "Specify the Chip Select GPIO pin for the SD card")
-set(SD_SCK "2" CACHE STRING "Specify de Clock GPIO pin for the SD card")
-set(SD_MOSI "3" CACHE STRING "Select the Master Out Slave In GPIO pin for the SD card")
-set(SD_MISO "4" CACHE STRING "Select the Master In Slave Out GPIO pin for the SD card")
-set(NES_CLK "6" CACHE STRING "Select the Clock GPIO pin for NES controller")
-set(NES_DATA "7" CACHE STRING "Select the Data GPIO pin for NES controller")
-set(NES_LAT "8" CACHE STRING "Select the Latch GPIO pin for NES controller")
+#set(SD_CS "5" CACHE STRING "Specify the Chip Select GPIO pin for the SD card")
+#set(SD_SCK "2" CACHE STRING "Specify de Clock GPIO pin for the SD card")
+#set(SD_MOSI "3" CACHE STRING "Select the Master Out Slave In GPIO pin for the SD card")
+#set(SD_MISO "4" CACHE STRING "Select the Master In Slave Out GPIO pin for the SD card")
+#set(NES_CLK "6" CACHE STRING "Select the Clock GPIO pin for NES controller")
+#set(NES_DATA "7" CACHE STRING "Select the Data GPIO pin for NES controller")
+#set(NES_LAT "8" CACHE STRING "Select the Latch GPIO pin for NES controller")
 # --------------------------------------------------------------------
-message("HDMI board type     : ${DVICONFIG}")
-message("SD card CS          : ${SD_CS}")
-message("SD card SCK         : ${SD_SCK}")
-message("SD card MOSI        : ${SD_MOSI}")
-message("SD card MISO        : ${SD_MISO}")
-message("NES controller CLK  : ${NES_CLK}")
-message("NES controller DATA : ${NES_DATA}")
-message("NES controller LAT  : ${NES_LAT}")
+#message("HDMI board type     : ${DVICONFIG}")
+#message("SD card CS          : ${SD_CS}")
+#message("SD card SCK         : ${SD_SCK}")
+#message("SD card MOSI        : ${SD_MOSI}")
+#message("SD card MISO        : ${SD_MISO}")
+#message("NES controller CLK  : ${NES_CLK}")
+#message("NES controller DATA : ${NES_DATA}")
+#message("NES controller LAT  : ${NES_LAT}")
 
 
 add_executable(piconesPlus
@@ -82,8 +82,8 @@ add_executable(piconesPlus
     hid_app.cpp
     gamepad.cpp
     nespad.cpp
-    menu.cpp
-    RomLister.cpp
+    #menu.cpp
+    #RomLister.cpp
     FrensHelpers.cpp
 )
 
@@ -100,19 +100,21 @@ set(TINYUSB_DEBUG_LEVE 0)
 include(${PICO_TINYUSB_PATH}/hw/bsp/${FAMILY}/family.cmake)
 family_configure_target(piconesPlus)
 
-target_compile_definitions(piconesPlus PRIVATE
-    DVICONFIG=${DVICONFIG}
-    SDCARD_PIN_SPI0_CS=${SD_CS}
-    SDCARD_PIN_SPI0_SCK=${SD_SCK}
-    SDCARD_PIN_SPI0_MOSI=${SD_MOSI}
-    SDCARD_PIN_SPI0_MISO=${SD_MISO}
-    SDCARD_PIO=pio1
-    SDCARD_PIO_SM=0
-    NES_PIN_CLK=${NES_CLK}
-    NES_PIN_DATA=${NES_DATA}
-    NES_PIN_LAT=${NES_LAT}
-)
+# target_compile_definitions(piconesPlus PRIVATE
+#     DVICONFIG=${DVICONFIG}
+#     SDCARD_PIN_SPI0_CS=${SD_CS}
+#     SDCARD_PIN_SPI0_SCK=${SD_SCK}
+#     SDCARD_PIN_SPI0_MOSI=${SD_MOSI}
+#     SDCARD_PIN_SPI0_MISO=${SD_MISO}
+#     SDCARD_PIO=pio1
+#     SDCARD_PIO_SM=0
+#     NES_PIN_CLK=${NES_CLK}
+#     NES_PIN_DATA=${NES_DATA}
+#     NES_PIN_LAT=${NES_LAT}
+# )
+include(${CMAKE_CURRENT_LIST_DIR}/drivers/picosystem/picosystem.cmake REQUIRED)
 target_link_libraries(piconesPlus PRIVATE
+    picosystem
     pico_stdlib
     pico_multicore
    # pico_util
@@ -126,10 +128,10 @@ target_link_libraries(piconesPlus PRIVATE
     hardware_flash
     infones
     tinyusb_host
-    sdcard
-    fatfs   
+    #sdcard
+    #fatfs   
     fgraphics 
-    rgbled    
+    #rgbled    
 )
 
     target_include_directories(piconesPlus
