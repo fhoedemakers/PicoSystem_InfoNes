@@ -32,6 +32,7 @@ namespace picosystem {
   void       _reset_to_dfu();
   void       _wait_vsync();
   void       _flip();
+  void       _flipbuffer(void * buffer, uint32_t c);
   bool       _is_flipping();
   void       _camera_offset(int32_t &x, int32_t &y);
   void       _camera_offset(bool enable);

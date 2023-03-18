@@ -178,6 +178,11 @@ namespace picosystem {
     }
   }
 
+  void _flipbuffer(void * buffer, uint32_t c) {
+    _in_flip = true;
+    dma_channel_transfer_from_buffer_now(dma_channel, buffer, c);
+  }
+
   void screen_program_init(PIO pio, uint sm) {
     #ifdef PIXEL_DOUBLE
       uint offset = pio_add_program(screen_pio, &screen_double_program);

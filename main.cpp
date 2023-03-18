@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <algorithm>
-//#include "pico/util/queue.h"
+// #include "pico/util/queue.h"
 #include "pico/multicore.h"
 
 #include <InfoNES.h>
@@ -28,7 +28,9 @@
 #include "rom_selector.h"
 
 #include "hardware.hpp"
+#ifdef LED_ENABLED
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
+#endif
 
 namespace
 {
@@ -116,7 +118,7 @@ const WORD __not_in_flash_func(NesPalette)[] = {
 // static queue_entry_t entry;
 
 #define SCANLINEBUFFERLINES 24
-#define SCANLINEPIXELS 240    // 320
+#define SCANLINEPIXELS 240 // 320
 #define SCANLINEBYTESIZE (SCANLINEPIXELS * sizeof(WORD))
 WORD scanlinebuffer0[SCANLINEPIXELS * SCANLINEBUFFERLINES];
 WORD scanlinebuffer1[SCANLINEPIXELS * SCANLINEBUFFERLINES];
@@ -332,7 +334,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
             }
             if (pushed & A)
             {
-               // rapidFireMask[i] ^= io::GamePadState::Button::A;
+                // rapidFireMask[i] ^= io::GamePadState::Button::A;
             }
             if (pushed & B)
             {
@@ -433,8 +435,11 @@ int InfoNES_LoadFrame()
 {
     auto count = frame++;
     auto onOff = hw_divider_s32_quotient_inlined(count, 60) & 1;
+#ifdef LED_ENABLED
     gpio_put(LED_PIN, onOff);
-
+#endif
+    // vsync??
+    picosystem::_wait_vsync();
     return count;
 }
 
@@ -512,7 +517,6 @@ bool endframe = false;
 
 void __not_in_flash_func(RomSelect_PreDrawLine)(int line)
 {
-    
 }
 
 void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
@@ -521,15 +525,16 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     util::WorkMeterMark(0xffff);
     drawWorkMeter(line);
 #endif
-   
+
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
-   
+
     WORD *b = scanlinesbuffers[bufferIndex] + lineInBuffer * SCANLINEPIXELS;
     memcpy(b, lb + 8, SCANLINEPIXELS * sizeof(WORD));
     if (prevbufferIndex != bufferIndex)
     {
-       if (prevbufferIndex != -1) {
+        if (prevbufferIndex != -1)
+        {
             // FH entry.bufferindex = prevbufferIndex;
             // FH entry.startframe = startframe;
             // FH entry.endframe = endframe;
@@ -538,22 +543,22 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             //      sleep_ms(5);
             // FH }
             startframe = endframe = false;
-       }
-       prevbufferIndex = bufferIndex;
+        }
+        prevbufferIndex = bufferIndex;
     }
     if (line == 0)
     {
         startframe = true;
-        //endframe = false;
+        // endframe = false;
     }
-    if (line == 239 )
+    if (line == 239)
     {
-        //startframe = false;
+        // startframe = false;
         endframe = true;
     }
-   
+
     assert(currentLineBuffer_);
-   
+
     currentLineBuffer_ = nullptr;
 }
 
@@ -603,19 +608,18 @@ void __not_in_flash_func(core1_main)()
         // dvi_->start();
         // while (!exclProc_.isExist())
         // {
-           
+
         // queue_entry_t qentry;
         // queue_remove_blocking(&call_queue, &qentry);
-        // FH if (qentry.startframe ) {              
-                //FH fstartframe();
+        // FH if (qentry.startframe ) {
+        // FH fstartframe();
         // FH }
         // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
-      
+
         // printf("Core 1 index: %d startframe: %d endframe: %d\n", qentry.bufferindex, qentry.startframe, qentry.endframe);
-        // FH if (qentry.endframe ) {             
-              // FH  fendframe();
+        // FH if (qentry.endframe ) {
+        // FH  fendframe();
         // FH }
-    
     }
 }
 
@@ -676,22 +680,22 @@ int main()
 
     _init_hardware();
     _start_audio();
-    
+
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
-  
+
     // Overclocking messes up the display
     // vreg_set_voltage(VREG_VOLTAGE_1_20);
     // sleep_ms(10);
     // set_sys_clock_khz(CPUFreqKHz, true);
-   
+
     stdio_init_all();
     printf("Start program\n");
-   
+#ifdef LED_ENABLED
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
     gpio_put(LED_PIN, 1);
-
+#endif
     // romSelector_.init(NES_FILE_ADDR);
 
     // util::dumpMemory((void *)NES_FILE_ADDR, 1024);
@@ -733,14 +737,13 @@ int main()
     }
 #endif
 
-
     // FH queue_init(&call_queue, sizeof(queue_entry_t), 2);
     // FH multicore_launch_core1(core1_main);
 
     printf("Initialising Graphics subsystem.\n");
     // finitgraphics(ROTATE_0, 320, 240);
     // FH finitgraphics(ROTATE_270, 240, 240);
-   
+
     while (true)
     {
         romSelector_.init(NES_FILE_ADDR);
