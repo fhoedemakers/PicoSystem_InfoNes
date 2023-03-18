@@ -742,9 +742,9 @@ int __not_in_flash_func(InfoNES_HSync)()
       InfoNES_MemorySet(WorkLine, 0, 640);
     }
      InfoNES_PostDrawLine(PPU_Scanline, false);
-     if (PPU_Scanline >=240) {
-      printf("hello");
-     }
+    //  if (PPU_Scanline >=240) {
+    //   printf("hello");
+    //  }
     // todo: 描画しないラインにもスプライトオーバーレジスタとかは反映する必要がある
   }
 

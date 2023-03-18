@@ -41,12 +41,12 @@ namespace
 }
 
 const WORD __not_in_flash_func(NesPalette)[] = {
-    0x2C63,
-    0x6D01,
-    0xEF10,
-    0x8F38,
-    0x4C60,
-    0x4670,
+    0x77f7,  // 00
+    0x37f0,  // 01
+    0x28f2,  // 02
+    0x28f4,  // 03
+    0x17f6,  // 04
+    0x14f8,  // 05
     0x6070,
     0xC058,
     0x4031,
@@ -535,6 +535,9 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     {
         if (prevbufferIndex != -1)
         {
+             // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
+            while(picosystem::_is_flipping()) {}
+            picosystem::_flipbuffer((void *)scanlinesbuffers[prevbufferIndex], sizeof(scanlinebuffer0) / 4);
             // FH entry.bufferindex = prevbufferIndex;
             // FH entry.startframe = startframe;
             // FH entry.endframe = endframe;
@@ -680,7 +683,7 @@ int main()
 
     _init_hardware();
     _start_audio();
-
+    backlight(75);
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
 
