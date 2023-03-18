@@ -15,43 +15,21 @@
 #include <hardware/flash.h>
 #include <memory>
 #include <math.h>
-//#include <util/dump_bin.h>
-//#include <util/exclusive_proc.h>
-//#include <util/work_meter.h>
 #include <string.h>
 #include <stdarg.h>
 #include <algorithm>
-#include "pico/util/queue.h"
+//#include "pico/util/queue.h"
 #include "pico/multicore.h"
 
 #include <InfoNES.h>
 #include <InfoNES_System.h>
 #include <InfoNES_pAPU.h>
 
-// #include <dvi/dvi.h>
-// NOUSB #include <tusb.h>
-#include <gamepad.h>
 #include "rom_selector.h"
-#include "menu.h"
-//#include "rgbled.hpp"
-//#define NESPAD
-#ifdef NESPAD
-#include "nespad.h"
-#endif
 
-//#include "ff.h"
-#include "fgraphics.h"
 #include "hardware.hpp"
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
-#define ERRORMESSAGESIZE 40
-#define GAMESAVEDIR "/SAVES"
-//util::ExclusiveProc exclProc_;
-char *ErrorMessage;
-bool isFatalError = false;
-// static FATFS fs;
-char *romName;
-//pimoroni::RGBLED led(6, 7, 8);
 namespace
 {
     constexpr uint32_t CPUFreqKHz = 252000;
@@ -126,15 +104,16 @@ const WORD __not_in_flash_func(NesPalette)[] = {
     0x0000,
     0x0000};
 
-static queue_t call_queue;
-typedef struct
-{
-    int scanline;
-    int bufferindex;
-    bool startframe;
-    bool endframe;
-} queue_entry_t;
-static queue_entry_t entry;
+// static queue_t call_queue;
+// typedef struct
+// {
+//     int scanline;
+//     int bufferindex;
+//     bool startframe;
+//     bool endframe;
+// } queue_entry_t;
+
+// static queue_entry_t entry;
 
 #define SCANLINEBUFFERLINES 24
 #define SCANLINEPIXELS 240    // 320
@@ -308,21 +287,17 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     for (int i = 0; i < 2; ++i)
     {
         auto &dst = i == 0 ? *pdwPad1 : *pdwPad2;
-        auto &gp = io::getCurrentGamePadState(i);
-
-        int v = (gp.buttons & io::GamePadState::Button::LEFT ? LEFT : 0) |
-                (gp.buttons & io::GamePadState::Button::RIGHT ? RIGHT : 0) |
-                (gp.buttons & io::GamePadState::Button::UP ? UP : 0) |
-                (gp.buttons & io::GamePadState::Button::DOWN ? DOWN : 0) |
-                (gp.buttons & io::GamePadState::Button::A ? A : 0) |
-                (gp.buttons & io::GamePadState::Button::B ? B : 0) |
-                (gp.buttons & io::GamePadState::Button::SELECT ? SELECT : 0) |
-                (gp.buttons & io::GamePadState::Button::START ? START : 0) |
-                0;
-#ifdef NESPAD
-        if (i == 0)
-            v |= nespad_state;
-#endif
+        // auto &gp = io::getCurrentGamePadState(i);
+        int v = 0;
+        // int v = (gp.buttons & io::GamePadState::Button::LEFT ? LEFT : 0) |
+        //         (gp.buttons & io::GamePadState::Button::RIGHT ? RIGHT : 0) |
+        //         (gp.buttons & io::GamePadState::Button::UP ? UP : 0) |
+        //         (gp.buttons & io::GamePadState::Button::DOWN ? DOWN : 0) |
+        //         (gp.buttons & io::GamePadState::Button::A ? A : 0) |
+        //         (gp.buttons & io::GamePadState::Button::B ? B : 0) |
+        //         (gp.buttons & io::GamePadState::Button::SELECT ? SELECT : 0) |
+        //         (gp.buttons & io::GamePadState::Button::START ? START : 0) |
+        //         0;
         int rv = v;
         if (rapidFireCounter & 2)
         {
@@ -357,11 +332,11 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
             }
             if (pushed & A)
             {
-                rapidFireMask[i] ^= io::GamePadState::Button::A;
+               // rapidFireMask[i] ^= io::GamePadState::Button::A;
             }
             if (pushed & B)
             {
-                rapidFireMask[i] ^= io::GamePadState::Button::B;
+                // rapidFireMask[i] ^= io::GamePadState::Button::B;
             }
         }
 
@@ -386,8 +361,8 @@ void InfoNES_Error(const char *pszMsg, ...)
     printf("[Error]");
     va_list args;
     va_start(args, pszMsg);
-    vsnprintf(ErrorMessage, ERRORMESSAGESIZE, pszMsg, args);
-    printf("%s", ErrorMessage);
+    // vsnprintf(ErrorMessage, ERRORMESSAGESIZE, pszMsg, args);
+    // printf("%s", ErrorMessage);
     va_end(args);
     printf("\n");
 }
@@ -456,17 +431,10 @@ extern WORD PC;
 static auto frame = 0;
 int InfoNES_LoadFrame()
 {
-#ifdef NESPAD
-    nespad_read_start();
-#endif
     auto count = frame++;
     auto onOff = hw_divider_s32_quotient_inlined(count, 60) & 1;
     gpio_put(LED_PIN, onOff);
-#ifdef NESPAD
-    nespad_read_finish(); // Sets global nespad_state var
-#endif
-   // NO USB tuh_task();
-    // sleep_ms(5);
+
     return count;
 }
 
@@ -541,87 +509,36 @@ void __not_in_flash_func(InfoNES_PreDrawLine)(int line)
 }
 bool startframe = false;
 bool endframe = false;
+
 void __not_in_flash_func(RomSelect_PreDrawLine)(int line)
 {
-    // util::WorkMeterMark(0xaaaa);
-    // auto b = &lb[0];
-    // util::WorkMeterMark(0x5555);
-    // b.size --> 640
-    // printf("Pre Draw%d\n", b->size());
-    // WORD = 2 bytes
-    // b->size = 640
-    // printf("%d\n", b->size());
-
-    // Note: First character is cutted off to the left with +32 offset
-
-    // RomSelect_SetLineBuffer(b->data() + 32, b->size());
-    // #define SCANLINEBUFFERLINES 20
-    // #define SCANLINEPIXELS      320
-    // #define SCANLINEBYTESIZE = (SCANLINEPIXELS * sizeof(WORD))
-    // WORD scanlinebuffer0[SCANLINEPIXELS * SCANLINEBUFFERLINES];
-    // WORD scanlinebuffer1[SCANLINEPIXELS * SCANLINEBUFFERLINES];
-    // WORD *scanlinesbuffers[] = { scanlinebuffer0, scanlinebuffer1 };
-    // 0 / 30  = 0   0000      0 % 30 = 0  1 % 30 = 1 ...
-    // 30 / 30 = 1   0001
-    // 60 / 30 = 2   0010
-    // 90 / 30 = 3   0011
-    // 120/ 30 = 4   0100
-    // 150 / 30 = 5  0101
-    // 180 / 30 = 6  0110
-    // 210 / 30 = 7  0111
-    bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
-    lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
-    // if (line == 4)
-    // {
-    //     memset(scanlinesbuffers[bufferIndex], 0, 4 * SCANLINEBYTESIZE);
-    // }
-    // printf("    Line in buffer: index %d lineinbuffer %d scanline %d\n", bufferIndex, lineInBuffer, line);
-    WORD *b = scanlinesbuffers[bufferIndex] + lineInBuffer * SCANLINEPIXELS;
-    // WORD *b = scanlinesbuffers[bufferIndex];
-    //RomSelect_SetLineBuffer(b, SCANLINEBYTESIZE);
-    RomSelect_SetLineBuffer(lb, sizeof(lb));
-    // RomSelect_SetLineBuffer(b->data() + 34, b->size());
-
-    //    (*b)[319] = line + dvi_->getFrameCounter();
-
-    currentLineBuffer_ = lb;
+    
 }
+
 void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
 {
 #if !defined(NDEBUG)
     util::WorkMeterMark(0xffff);
     drawWorkMeter(line);
 #endif
-    // printf("%d\n", line & 3);
-    // static queue_t call_queue;
-    // typedef struct {
-    //     int scanline;
-    //     int bufferindex;
-    // } queue_entry_t;
-    // static queue_entry_t entry;
+   
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
-    // if (line == 4)
-    // {
-    //     memset(scanlinesbuffers[bufferIndex], 0, 4 * SCANLINEBYTESIZE);
-    // }
-    // printf("    Line in buffer: index %d lineinbuffer %d scanline %d\n", bufferIndex, lineInBuffer, line);
+   
     WORD *b = scanlinesbuffers[bufferIndex] + lineInBuffer * SCANLINEPIXELS;
     memcpy(b, lb + 8, SCANLINEPIXELS * sizeof(WORD));
     if (prevbufferIndex != bufferIndex)
     {
        if (prevbufferIndex != -1) {
-            entry.bufferindex = prevbufferIndex;
-            //printf("Pushing index %d\n", entry.bufferindex);
-            entry.startframe = startframe;
-            entry.endframe = endframe;
-            queue_add_blocking(&call_queue, &entry);
-            if (frommenu) {
-                 sleep_ms(5);
-            }
+            // FH entry.bufferindex = prevbufferIndex;
+            // FH entry.startframe = startframe;
+            // FH entry.endframe = endframe;
+            // FH queue_add_blocking(&call_queue, &entry);
+            // FH if (frommenu) {
+            //      sleep_ms(5);
+            // FH }
             startframe = endframe = false;
        }
-       //memset(scanlinesbuffers[bufferIndex], 0, sizeof(scanlinebuffer0));
        prevbufferIndex = bufferIndex;
     }
     if (line == 0)
@@ -634,19 +551,9 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         //startframe = false;
         endframe = true;
     }
-    // if (line == 4)
-    // {
-    //     fstartframe();
-    //     fwritescanline(sizeof(emptylines), (char *)emptylines);
-    // }
-    // fwritescanline(640, (char *)currentLineBuffer_);
-    // if (line == 235)
-    // {
-    //     fwritescanline(sizeof(emptylines), (char *)emptylines);
-    //     fendframe();
-    // }
+   
     assert(currentLineBuffer_);
-    // dvi_->setLineBuffer(line, currentLineBuffer_);
+   
     currentLineBuffer_ = nullptr;
 }
 
@@ -697,41 +604,18 @@ void __not_in_flash_func(core1_main)()
         // while (!exclProc_.isExist())
         // {
            
-        queue_entry_t qentry;
-        queue_remove_blocking(&call_queue, &qentry);
-        if (qentry.startframe ) {
-                //printf("Startframe\n");
-                fstartframe();
-                //for (int i = 1; i<5 ; i++) 
-                //fwritescanline(sizeof(emptylines), (char *)emptylines);
-                //fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
-        }
-        fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
+        // queue_entry_t qentry;
+        // queue_remove_blocking(&call_queue, &qentry);
+        // FH if (qentry.startframe ) {              
+                //FH fstartframe();
+        // FH }
+        // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
       
         // printf("Core 1 index: %d startframe: %d endframe: %d\n", qentry.bufferindex, qentry.startframe, qentry.endframe);
-         if (qentry.endframe ) {
-                //printf("Endframe\n");
-                fendframe();
-        }
-      
-        // printf("Line: %d\n", line);
-        // if (line == 4)
-        // {
-        //     fstartframe();
-        //     fwritescanline(sizeof(emptylines), (char *)emptylines);
-        // }
-        // fwritescanline(640, (char *)SCANLINESCORE1[line & SCANLINEMASK]);
-        // if (line == 235)
-        // {
-        //     fwritescanline(sizeof(emptylines), (char *)emptylines);
-        //     fendframe();
-        // }
-        // }
-
-        // dvi_->unregisterIRQThisCore();
-        // dvi_->stop();
-
-        // exclProc_.processOrWaitIfExist();
+        // FH if (qentry.endframe ) {             
+              // FH  fendframe();
+        // FH }
+    
     }
 }
 
@@ -791,14 +675,10 @@ int main()
 {
 
     _init_hardware();
-    char selectedRom[80];
-    romName = selectedRom;
-  
+    _start_audio();
+    
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
-    char errMSG[ERRORMESSAGESIZE];
-    errMSG[0] = selectedRom[0] = 0;
-    ErrorMessage = errMSG;
   
     // Overclocking messes up the display
     // vreg_set_voltage(VREG_VOLTAGE_1_20);
@@ -811,8 +691,6 @@ int main()
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
     gpio_put(LED_PIN, 1);
-
-    // NOUSB tusb_init();
 
     // romSelector_.init(NES_FILE_ADDR);
 
@@ -854,77 +732,19 @@ int main()
         } while (buf[126]); 
     }
 #endif
-    //
-    // dvi_ = std::make_unique<dvi::DVI>(pio0, &DVICONFIG,
-    //                                   dvi::getTiming640x480p60Hz());
-    // //    dvi_->setAudioFreq(48000, 25200, 6144);
-    // dvi_->setAudioFreq(44100, 28000, 6272);
 
-    // dvi_->allocateAudioBuffer(256);
-    // //    dvi_->setExclusiveProc(&exclProc_);
 
-    // dvi_->getBlankSettings().top = 4 * 2;
-    // dvi_->getBlankSettings().bottom = 4 * 2;
-    // // dvi_->setScanLine(true);
-
-#ifdef NESPAD
-    nespad_begin(CPUFreqKHz, NES_PIN_CLK, NES_PIN_DATA, NES_PIN_LAT);
-#endif
-    // 空サンプル詰めとく
-    // dvi_->getAudioRingBuffer().advanceWritePointer(255);
-
-    queue_init(&call_queue, sizeof(queue_entry_t), 2);
-    multicore_launch_core1(core1_main);
+    // FH queue_init(&call_queue, sizeof(queue_entry_t), 2);
+    // FH multicore_launch_core1(core1_main);
 
     printf("Initialising Graphics subsystem.\n");
     // finitgraphics(ROTATE_0, 320, 240);
-     finitgraphics(ROTATE_270, 240, 240);
-    // led.set_rgb(0,0,0);
-    // isFatalError = !initSDCard();
-    // When a game is started from the menu, the menu will reboot the device.
-    // After reboot the emulator will start the selected game.
-    // if (watchdog_caused_reboot() && isFatalError == false)
-    // {
-    //     // Determine loaded rom
-    //     printf("Rebooted by menu\n");
-    //     FIL fil;
-    //     FRESULT fr;
-    //     size_t tmpSize;
-    //     printf("Reading current game from %s and starting emulator\n", ROMINFOFILE);
-    //     fr = f_open(&fil, ROMINFOFILE, FA_READ);
-    //     if (fr == FR_OK)
-    //     {
-    //         size_t r;
-    //         fr = f_read(&fil, selectedRom, sizeof(selectedRom), &r);
-    //         if (fr != FR_OK)
-    //         {
-    //             snprintf(ErrorMessage, 40, "Cannot read %s:%d\n", ROMINFOFILE, fr);
-    //             selectedRom[0] = 0;
-    //             printf(ErrorMessage);
-    //         }
-    //         else
-    //         {
-    //             selectedRom[r] = 0;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         snprintf(ErrorMessage, 40, "Cannot open %s:%d\n", ROMINFOFILE, fr);
-    //         printf(ErrorMessage);
-    //     }
-    //     f_close(&fil);
-    // }
+    // FH finitgraphics(ROTATE_270, 240, 240);
+   
     while (true)
     {
-        // if (strlen(selectedRom) == 0)
-        // {
-
-        //     menu(NES_FILE_ADDR, ErrorMessage, isFatalError); // never returns, but reboots upon selecting a game
-        // }
-        // printf("Now playing: %s\n", selectedRom);
         romSelector_.init(NES_FILE_ADDR);
         InfoNES_Main();
-        selectedRom[0] = 0;
     }
 
     return 0;
