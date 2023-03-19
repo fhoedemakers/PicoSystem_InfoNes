@@ -10,7 +10,7 @@ Click on image below to see a demo video.
 This is a work in progress, and still has lots of things todo:
 
 - Fix colors that are somewhat off.
-- Sound has to be implemented.
+- Sound has to be implemented. Will be a challenge since the PicoSystem has as simple Piezo buzzer/speaker which has not the capabilities for generating proper sound from the NES. 
 - Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
 - Looking whether it is possible to bundle the executable with a game from the public domain.
 - Companion App in Microsoft Windows for uploading roms to the handheld.
