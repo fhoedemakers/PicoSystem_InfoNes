@@ -282,6 +282,9 @@ namespace picosystem {
     return gpio_get_all();
   }
 
+  void _gpio_get2() {
+    _io = gpio_get_all();
+  }
   bool _audio_update_callback(struct repeating_timer *t) {
     _update_audio();
     return true;

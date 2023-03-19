@@ -60,7 +60,7 @@ using namespace picosystem;
 // functions in their project
 
 #ifndef MICROPY_BUILD_TYPE
-int main() {
+int mainOLD() {
   _init_hardware();
   _start_audio();
 

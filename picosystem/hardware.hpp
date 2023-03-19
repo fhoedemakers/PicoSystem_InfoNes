@@ -13,6 +13,7 @@
 
 namespace picosystem {
 
+  uint32_t _io = 0, _lio = 0;
 // hardware
   bool        pressed(uint32_t b);
   bool        button(uint32_t b);
@@ -28,6 +29,7 @@ namespace picosystem {
   void       _init_hardware();
   void       _start_audio();
   uint32_t   _gpio_get();
+  void       _gpio_get2();
   float      _battery_voltage();
   void       _reset_to_dfu();
   void       _wait_vsync();

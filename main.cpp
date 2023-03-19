@@ -98,7 +98,7 @@ const WORD __not_in_flash_func(NesPalette)[] = {
     0xdfff,  // 35
     0xddff,  // 36
     0xecff,  // 37
-    0xebff,  // 38 
+    0xebff,  // 38
     0xfbfd,  // 39
     0xfcfc,  // 3a
     0xfdfb,  // 3b
@@ -118,8 +118,8 @@ const WORD __not_in_flash_func(NesPalette)[] = {
 
 // static queue_entry_t entry;
 
-#define SCANLINEBUFFERLINES 24    // Max 40
-#define SCANLINEPIXELS 240 // 320
+#define SCANLINEBUFFERLINES 24 // Max 40
+#define SCANLINEPIXELS 240     // 320
 #define SCANLINEBYTESIZE (SCANLINEPIXELS * sizeof(WORD))
 WORD scanlinebuffer0[SCANLINEPIXELS * SCANLINEBUFFERLINES];
 WORD scanlinebuffer1[SCANLINEPIXELS * SCANLINEBUFFERLINES];
@@ -275,76 +275,74 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     static constexpr int RIGHT = 1 << 7;
     static constexpr int UP = 1 << 4;
     static constexpr int DOWN = 1 << 5;
-    static constexpr int SELECT = 1 << 2;
-    static constexpr int START = 1 << 3;
+    static constexpr int Y = 1 << 2;
+    static constexpr int X = 1 << 3;
     static constexpr int A = 1 << 0;
     static constexpr int B = 1 << 1;
 
-    static DWORD prevButtons[2]{};
-    static int rapidFireMask[2]{};
+    static DWORD prevButtons = 0;
+    static int rapidFireMask = 0;
     static int rapidFireCounter = 0;
 
     ++rapidFireCounter;
     bool reset = false;
+    picosystem::_gpio_get2();
 
-    for (int i = 0; i < 2; ++i)
+
+    auto &dst = *pdwPad1;
+
+    int v = (picosystem::button(picosystem::LEFT) ? LEFT : 0) |
+            (picosystem::button(picosystem::RIGHT) ? RIGHT : 0) |
+            (picosystem::button(picosystem::UP) ? UP : 0) |
+            (picosystem::button(picosystem::DOWN) ? DOWN : 0) |
+            (picosystem::button(picosystem::Y) ? Y : 0) |
+            (picosystem::button(picosystem::X) ? X : 0) |
+            (picosystem::button(picosystem::A) ? A : 0) |
+            (picosystem::button(picosystem::B) ? B : 0) |
+            0;
+    int rv = v;
+    if (rapidFireCounter & 2)
     {
-        auto &dst = i == 0 ? *pdwPad1 : *pdwPad2;
-        // auto &gp = io::getCurrentGamePadState(i);
-        int v = 0;
-        // int v = (gp.buttons & io::GamePadState::Button::LEFT ? LEFT : 0) |
-        //         (gp.buttons & io::GamePadState::Button::RIGHT ? RIGHT : 0) |
-        //         (gp.buttons & io::GamePadState::Button::UP ? UP : 0) |
-        //         (gp.buttons & io::GamePadState::Button::DOWN ? DOWN : 0) |
-        //         (gp.buttons & io::GamePadState::Button::A ? A : 0) |
-        //         (gp.buttons & io::GamePadState::Button::B ? B : 0) |
-        //         (gp.buttons & io::GamePadState::Button::SELECT ? SELECT : 0) |
-        //         (gp.buttons & io::GamePadState::Button::START ? START : 0) |
-        //         0;
-        int rv = v;
-        if (rapidFireCounter & 2)
-        {
-            // 15 fire/sec
-            rv &= ~rapidFireMask[i];
-        }
-
-        dst = rv;
-
-        auto p1 = v;
-
-        auto pushed = v & ~prevButtons[i];
-
-        if (p1 & SELECT)
-        {
-            // if (pushed & LEFT)
-            // {
-            //     saveNVRAM();
-            //     romSelector_.prev();
-            //     reset = true;
-            // }
-            // if (pushed & RIGHT)
-            // {
-            //     saveNVRAM();
-            //     romSelector_.next();
-            //     reset = true;
-            // }
-            if (pushed & START)
-            {
-                saveNVRAM();
-                reset = true;
-            }
-            if (pushed & A)
-            {
-                // rapidFireMask[i] ^= io::GamePadState::Button::A;
-            }
-            if (pushed & B)
-            {
-                // rapidFireMask[i] ^= io::GamePadState::Button::B;
-            }
-        }
-
-        prevButtons[i] = v;
+        // 15 fire/sec
+        rv &= ~rapidFireMask;
     }
+
+    dst = rv;
+
+    auto p1 = v;
+
+    auto pushed = v & ~prevButtons;
+
+    if (p1 & Y)
+    {
+        // if (pushed & LEFT)
+        // {
+        //     saveNVRAM();
+        //     romSelector_.prev();
+        //     reset = true;
+        // }
+        // if (pushed & RIGHT)
+        // {
+        //     saveNVRAM();
+        //     romSelector_.next();
+        //     reset = true;
+        // }
+        if (pushed & X)
+        {
+            saveNVRAM();
+            reset = true;
+        }
+        if (pushed & A)
+        {
+            // rapidFireMask[i] ^= io::GamePadState::Button::A;
+        }
+        if (pushed & B)
+        {
+            // rapidFireMask[i] ^= io::GamePadState::Button::B;
+        }
+    }
+
+    prevButtons = v;
 
     *pdwSystem = reset ? PAD_SYS_QUIT : 0;
 }
@@ -440,7 +438,7 @@ int InfoNES_LoadFrame()
     gpio_put(LED_PIN, onOff);
 #endif
     // vsync??
-    //picosystem::_wait_vsync();
+    // picosystem::_wait_vsync();
     return count;
 }
 
@@ -536,8 +534,10 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     {
         if (prevbufferIndex != -1)
         {
-             // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
-            while(picosystem::_is_flipping()) {}
+            // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
+            while (picosystem::_is_flipping())
+            {
+            }
             picosystem::_flipbuffer((void *)scanlinesbuffers[prevbufferIndex], sizeof(scanlinebuffer0) / 4);
             // FH entry.bufferindex = prevbufferIndex;
             // FH entry.startframe = startframe;
