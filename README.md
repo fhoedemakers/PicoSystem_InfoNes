@@ -14,6 +14,7 @@ This is a work in progress, and still has lots of things todo:
 - Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
 - Looking whether it is possible to bundle the executable with a game from the public domain.
 - Companion App in Microsoft Windows for uploading roms to the handheld.
+- Keep the emulator runnning at the correct speed.
 
 ### flashing the PicoSystem
 - Download **PicoSystem_InfoNes.uf2** from the [releases page](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases/latest).
