@@ -34,12 +34,13 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
 namespace
 {
-    constexpr uint32_t CPUFreqKHz = 252000;
     static constexpr uintptr_t NES_FILE_ADDR = 0x10080000;
-
     ROMSelector romSelector_;
 }
 
+// color table in aaaarrrrggggbbbb format
+// converted from http://wiki.picosystem.com/en/tools/image-converter
+// Not quite satisfied yet...
 const WORD __not_in_flash_func(NesPalette)[] = {
     0x77f7,  // 00
     0x37f0,  // 01
@@ -47,64 +48,64 @@ const WORD __not_in_flash_func(NesPalette)[] = {
     0x28f4,  // 03
     0x17f6,  // 04
     0x14f8,  // 05
-    0x6070,
-    0xC058,
-    0x4031,
-    0xA009,
-    0xE001,
-    0xE201,
-    0xC801,
-    0x0000,
-    0x0000,
-    0x0000,
-    0x75AD,
-    0x160B,
-    0x9A42,
-    0x197A,
-    0xB5A1,
-    0xAEC1,
-    0xE6B9,
-    0x409A,
-    0xE06A,
-    0x6033,
-    0xA003,
-    0xC703,
-    0x8F03,
-    0x0000,
-    0x0000,
-    0x0000,
-    0xFFFF,
-    0x9F5D,
-    0xE08F,
-    0x9FCC,
-    0x3FF4,
-    0x18FC,
-    0x4FFC,
-    0xC9EC,
-    0x65BD,
-    0xE585,
-    0xEA55,
-    0x513E,
-    0x193E,
-    0x694A,
-    0x0000,
-    0x0000,
-    0xFFFF,
-    0x5FBF,
-    0xDFD6,
-    0x9FEE,
-    0x7FFE,
-    0x7CFE,
-    0x79FE,
-    0xB6FE,
-    0xF5E6,
-    0x15CF,
-    0x57BF,
-    0x5AAF,
-    0x3DAF,
-    0xB6B5,
-    0x0000,
-    0x0000};
+    0x11f8,  // 06
+    0x20f6,  // 07
+    0x30f4,  // 08
+    0x40f1,  // 09
+    0x40f0,  // 0a
+    0x41f0,  // 0b
+    0x44f0,  // 0c
+    0x00f0,  // 0d
+    0x00f0,  // 0e
+    0x00f0,  // 0f
+    0xbbfb,  // 10
+    0x7cf1,  // 11
+    0x6df4,  // 12
+    0x5df8,  // 13
+    0x4bfb,  // 14
+    0x47fc,  // 15
+    0x43fc,  // 16
+    0x50fa,  // 17
+    0x60f7,  // 18
+    0x70f4,  // 19
+    0x81f1,  // 1a
+    0x84f0,  // 1b
+    0x88f0,  // 1c
+    0x00f0,  // 1d
+    0x00f0,  // 1e
+    0x00f0,  // 1f
+    0xFFFF,  // 20
+    0xcff6,  // 21
+    0xbff9,  // 22
+    0x9ffd,  // 23
+    0x9fff,  // 24
+    0x9cff,  // 25
+    0x98ff,  // 26
+    0xa5ff,  // 27
+    0xb3fc,  // 28
+    0xc3f9,  // 29
+    0xd6f6,  // 2a
+    0xd9f4,  // 2b
+    0xddf4,  // 2c
+    0x55f5,  // 2d
+    0x00f0,  // 2e
+    0x00f0,  // 2f
+    0xFFFF,  // 30
+    0xeffc,  // 31
+    0xeffe,  // 32
+    0xefff,  // 33
+    0xefff,  // 34
+    0xdfff,  // 35
+    0xddff,  // 36
+    0xecff,  // 37
+    0xebff,  // 38 
+    0xfbfd,  // 39
+    0xfcfc,  // 3a
+    0xfdfb,  // 3b
+    0xfffb,  // 3c
+    0xccfc,  // 3d
+    0x00f0,  // 3e
+    0x00f0}; // 3f
 
 // static queue_t call_queue;
 // typedef struct
@@ -686,11 +687,6 @@ int main()
     backlight(75);
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
-
-    // Overclocking messes up the display
-    // vreg_set_voltage(VREG_VOLTAGE_1_20);
-    // sleep_ms(10);
-    // set_sys_clock_khz(CPUFreqKHz, true);
 
     stdio_init_all();
     printf("Start program\n");
