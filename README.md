@@ -1,4 +1,4 @@
-# InfoNes a NES emulator for the Pimoroni PicoSystem RP2040 gaming handheld
+# PicoSystem_InfoNes a NES emulator for the Pimoroni PicoSystem RP2040 gaming handheld
 Now you can play Nintendo NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld.
 
 ![image](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/assets/PicoSystem.jpg)
