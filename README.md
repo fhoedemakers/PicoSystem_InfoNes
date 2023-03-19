@@ -20,7 +20,7 @@ Click on image below to see a demo video.
 - Companion App in Microsoft Windows for uploading roms to the handheld.
 - Keep the emulator runnning at the correct speed.
 
-### flashing the PicoSystem
+## flashing the PicoSystem
 - Download **PicoSystem_InfoNes.uf2** from the [releases page](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases/latest).
 - Connect PicoSystem using an USB-C cable to your computer. Make sure the PicoSystem is switched off.
 - Push and hold the X button then the power-on button. Release the buttons and the drive RPI-RP2 appears on your computer.
