@@ -1,4 +1,4 @@
-# InfoNEs a NES emulator for the Pimoroni PicoSystem handheld
+# InfoNes a NES emulator for the Pimoroni PicoSystem handheld
 
 
 This is a work in progress.
