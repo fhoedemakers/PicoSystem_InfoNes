@@ -12,8 +12,8 @@
 
 
 namespace picosystem {
-
-  uint32_t _io = 0, _lio = 0;
+  // io state
+  uint32_t _io = 0;  // dirty hack, also defined in picosystem.hpp. 
 // hardware
   bool        pressed(uint32_t b);
   bool        button(uint32_t b);
