@@ -117,7 +117,7 @@ const WORD __not_in_flash_func(NesPalette)[] = {
 
 // static queue_entry_t entry;
 
-#define SCANLINEBUFFERLINES 24
+#define SCANLINEBUFFERLINES 24    // Max 40
 #define SCANLINEPIXELS 240 // 320
 #define SCANLINEBYTESIZE (SCANLINEPIXELS * sizeof(WORD))
 WORD scanlinebuffer0[SCANLINEPIXELS * SCANLINEBUFFERLINES];
@@ -439,7 +439,7 @@ int InfoNES_LoadFrame()
     gpio_put(LED_PIN, onOff);
 #endif
     // vsync??
-    picosystem::_wait_vsync();
+    //picosystem::_wait_vsync();
     return count;
 }
 
