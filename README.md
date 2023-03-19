@@ -28,7 +28,8 @@ The ROM should be placed at address 0x10080000, and can be  transferred using [p
 picotool load foo.nes -t bin -o 0x10080000
 ```
 
-
+##Screen Resolution
+The original Nintendo Entertainment System has a resolution of 256x240 pixels. The PicoSystem has a resolution of 240x240 pixels. Therefore, on the PicoSystem the first and last 8 Pixels of each horizontal line are not visible.
 
 ## Credits
 InfoNes is programmed by [Jay Kumogata](https://github.com/jay-kumogata/InfoNES) and ported for DVI output to the Raspberry PI Pico by [Shuichi Takano](https://github.com/shuichitakano/pico-infones). I used the port of Shuichi Takano as a starting point for this project.
