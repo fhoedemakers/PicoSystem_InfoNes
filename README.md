@@ -1,4 +1,8 @@
 # PicoSystem_InfoNes a NES emulator for the Pimoroni PicoSystem RP2040 gaming handheld
+``
+!!!This is a work in progress, there are still lots of things to do Also currently there is no sound output!!!
+``
+
 Now you can play Nintendo NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld.
 
 ![image](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/assets/PicoSystem.jpg)
@@ -7,7 +11,7 @@ Click on image below to see a demo video.
 
 [![Video](https://img.youtube.com/vi/4VYKSMvYWc8/0.jpg)](https://www.youtube.com/watch?v=4VYKSMvYWc8)
 
-This is a work in progress, and still has lots of things todo:
+ Things to do:
 
 - Fix colors that are somewhat off.
 - Sound has to be implemented. Will be a challenge since the PicoSystem has as simple Piezo buzzer/speaker which has not the capabilities for generating proper sound from the NES. 
