@@ -10,22 +10,22 @@ add_definitions( -DNDEBUG )
 
 include(pico_sdk_import.cmake)
 
-project(piconesPlus C CXX ASM)
+project(PicoSystem_InfoNes C CXX ASM)
 pico_sdk_init()
 
 
-add_executable(piconesPlus
+add_executable(PicoSystem_InfoNes
     main.cpp
 )
 
-pico_set_program_name(piconesPlus "piconesPlus")
-pico_set_program_version(piconesPlus "0.3")
+pico_set_program_name(PicoSystem_InfoNes "PicoSystem_InfoNes")
+pico_set_program_version(PicoSystem_InfoNes "0.1")
 
-pico_enable_stdio_uart(piconesPlus 1)
-pico_enable_stdio_usb(piconesPlus 0)
+pico_enable_stdio_uart(PicoSystem_InfoNes 1)
+pico_enable_stdio_usb(PicoSystem_InfoNes 0)
 
 include(${CMAKE_CURRENT_LIST_DIR}/picosystem/picosystem.cmake REQUIRED)
-target_link_libraries(piconesPlus PRIVATE
+target_link_libraries(PicoSystem_InfoNes PRIVATE
     picosystem
     pico_stdlib
     pico_multicore
@@ -40,7 +40,7 @@ target_link_libraries(piconesPlus PRIVATE
     infones
 )
 
-    target_include_directories(piconesPlus
+    target_include_directories(PicoSystem_InfoNes
     PRIVATE
         pico_lib
         infones
@@ -52,7 +52,7 @@ target_link_libraries(piconesPlus PRIVATE
   
     add_subdirectory(infones)
 
-    pico_add_extra_outputs(piconesPlus)
+    pico_add_extra_outputs(PicoSystem_InfoNes)
 
 
 
