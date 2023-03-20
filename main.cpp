@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <algorithm>
+
 // #include "pico/util/queue.h"
 #include "pico/multicore.h"
 
@@ -34,7 +35,7 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
 namespace
 {
-    static constexpr uintptr_t NES_FILE_ADDR = 0x10080000;
+    static constexpr uintptr_t NES_FILE_ADDR = 0x10090000;
     ROMSelector romSelector_;
 }
 
@@ -117,6 +118,10 @@ const WORD __not_in_flash_func(NesPalette)[] = {
 // } queue_entry_t;
 
 // static queue_entry_t entry;
+
+static auto frame = 0;
+static uint32_t start_tick_us = 0;
+static uint32_t fps = 0;
 
 #define SCANLINEBUFFERLINES 24 // Max 40
 #define SCANLINEPIXELS 240     // 320
@@ -288,7 +293,6 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     bool reset = false;
     picosystem::_gpio_get2();
 
-
     auto &dst = *pdwPad1;
 
     int v = (picosystem::button(picosystem::LEFT) ? LEFT : 0) |
@@ -313,20 +317,25 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 
     auto pushed = v & ~prevButtons;
 
+    if (pushed & X)
+    {
+        printf("%d\n", fps);
+    }
+
     if (p1 & Y)
     {
-        // if (pushed & LEFT)
-        // {
-        //     saveNVRAM();
-        //     romSelector_.prev();
-        //     reset = true;
-        // }
-        // if (pushed & RIGHT)
-        // {
-        //     saveNVRAM();
-        //     romSelector_.next();
-        //     reset = true;
-        // }
+        if (pushed & LEFT)
+        {
+            saveNVRAM();
+            romSelector_.StartCustomRom();
+            reset = true;
+        }
+        if (pushed & RIGHT)
+        {
+            saveNVRAM();
+            romSelector_.StartBladeBuster();
+            reset = true;
+        }
         if (pushed & X)
         {
             saveNVRAM();
@@ -429,16 +438,25 @@ void __not_in_flash_func(InfoNES_SoundOutput)(int samples, BYTE *wave1, BYTE *wa
 
 extern WORD PC;
 
-static auto frame = 0;
 int InfoNES_LoadFrame()
 {
+
     auto count = frame++;
     auto onOff = hw_divider_s32_quotient_inlined(count, 60) & 1;
 #ifdef LED_ENABLED
     gpio_put(LED_PIN, onOff);
 #endif
-    // vsync??
+    // Not sure if i'm doing the right thing here...
+    // _wait_vsync() makes it run at 41 fps which is too slow for the emulator
     // picosystem::_wait_vsync();
+    // not waiting for vsync goes to 80 frames per second.
+    // Delay 4 milliseconds (4000 microseconds) in order to reach a 60 fps cap.
+    // sleep_ms() does not work.
+    busy_wait_us_32(4000);
+    uint32_t tick_us = picosystem::time_us() - start_tick_us;
+    // calculate fps and round to nearest value (instead of truncating/floor)
+    fps = (1000000 - 1) / tick_us + 1;
+    start_tick_us = picosystem::time_us();
     return count;
 }
 
@@ -738,14 +756,9 @@ int main()
 
     // FH queue_init(&call_queue, sizeof(queue_entry_t), 2);
     // FH multicore_launch_core1(core1_main);
-
-    printf("Initialising Graphics subsystem.\n");
-    // finitgraphics(ROTATE_0, 320, 240);
-    // FH finitgraphics(ROTATE_270, 240, 240);
-
+    romSelector_.init(NES_FILE_ADDR);
     while (true)
     {
-        romSelector_.init(NES_FILE_ADDR);
         InfoNES_Main();
     }
 

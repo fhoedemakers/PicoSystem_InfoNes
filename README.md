@@ -18,9 +18,7 @@ Click on image below to see a demo video.
 - Fix colors that are somewhat off.
 - Sound has to be implemented. Will be a challenge since the PicoSystem has as simple Piezo buzzer/speaker which has not the capabilities for generating proper sound from the NES. 
 - Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
-- Looking whether it is possible to bundle the executable with a game from the public domain.
 - Companion App in Microsoft Windows for uploading roms to the handheld.
-- Keep the emulator runnning at the correct speed.
 
 ## flashing the PicoSystem
 - Download **PicoSystem_InfoNes.uf2** from the [releases page](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases/latest).
@@ -33,13 +31,17 @@ Click on image below to see a demo video.
 - Y: SELECT
 - X: START
 - Y + X: Reset
+- Y + LEFT: Start uploaded game
+- Y + RIGHT: Start built-in game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
 
-## Uploading Roms
+## Uploading custom roms
 Load roms by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
-The ROM should be placed at address 0x10080000, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
+The ROM should be placed at address **0x10090000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
+
 ```
-picotool load rom.nes -t bin -o 0x10080000
+picotool load rom.nes -t bin -o 0x10090000
 ```
+**Attention: the upload address has been changed from 0x10080000 to 0x10090000.** This is because of the additional size of the built-in game baked into the executable.
 
 ## Screen Resolution
 The original Nintendo Entertainment System has a resolution of 256x240 pixels. The PicoSystem has a resolution of 240x240 pixels. Therefore, on the PicoSystem the first and last 8 Pixels of each horizontal line are not visible.
