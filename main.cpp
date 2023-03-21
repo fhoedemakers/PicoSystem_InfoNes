@@ -561,18 +561,11 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     {
         if (prevbufferIndex != -1)
         {
-            // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
+            // wait untill DMA is ready to write next buffer
             while (picosystem::_is_flipping())
             {
             }
             picosystem::_flipbuffer((void *)scanlinesbuffers[prevbufferIndex], sizeof(scanlinebuffer0) / 4);
-            // FH entry.bufferindex = prevbufferIndex;
-            // FH entry.startframe = startframe;
-            // FH entry.endframe = endframe;
-            // FH queue_add_blocking(&call_queue, &entry);
-            // FH if (frommenu) {
-            //      sleep_ms(5);
-            // FH }
             startframe = endframe = false;
         }
         prevbufferIndex = bufferIndex;
@@ -580,11 +573,9 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     if (line == 0)
     {
         startframe = true;
-        // endframe = false;
     }
     if (line == 239)
     {
-        // startframe = false;
         endframe = true;
     }
 
