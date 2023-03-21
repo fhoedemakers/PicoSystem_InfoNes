@@ -274,6 +274,9 @@ bool loadNVRAM()
     return true;
 }
 
+static DWORD prevButtons = 0;
+static int rapidFireMask = 0;
+static int rapidFireCounter = 0;
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
     static constexpr int LEFT = 1 << 6;
@@ -285,10 +288,14 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     static constexpr int A = 1 << 0;
     static constexpr int B = 1 << 1;
 
-    static DWORD prevButtons = 0;
-    static int rapidFireMask = 0;
-    static int rapidFireCounter = 0;
-
+    // moved variables outside function body because prevButtons gets initialized to 0 everytime the function is called.
+    // This is strange because a static variable inside a function is only initialsed once and retains it's value
+    // throughout different function calls.
+    // Am i missing something? 
+    // static DWORD prevButtons = 0;
+    // static int rapidFireMask = 0;
+    // static int rapidFireCounter = 0;
+    
     ++rapidFireCounter;
     bool reset = false;
     picosystem::_gpio_get2();
@@ -319,6 +326,8 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 
     if (pushed & X)
     {
+        printf("PrevButtons: %d\n", prevButtons);
+        printf("Pushed: %d\n");
         printf("%d\n", fps);
     }
 
@@ -352,7 +361,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     }
 
     prevButtons = v;
-
+   
     *pdwSystem = reset ? PAD_SYS_QUIT : 0;
 }
 
