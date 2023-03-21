@@ -327,7 +327,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     if (pushed & X)
     {
         printf("PrevButtons: %d\n", prevButtons);
-        printf("Pushed: %d\n");
+        printf("Pushed: %d\n", pushed) ;
         printf("%d\n", fps);
     }
 
