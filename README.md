@@ -2,6 +2,7 @@
 ``
 !!!This is a work in progress, there are still lots of things to do Also currently there is no sound output!!!
 ``
+Emulater is now bundled with the freeware homebrew game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html).
 
 [A pre-release .uf2 binary to flash on your picosystem can be found here.](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases)
 
@@ -15,11 +16,10 @@ Click on image below to see a demo video.
 
  Things to do:
 
-- Fix colors that are somewhat off.
 - Sound has to be implemented. Will be a challenge since the PicoSystem has as simple Piezo buzzer/speaker which has not the capabilities for generating proper sound from the NES. 
 - Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
 - Companion App in Microsoft Windows for uploading roms to the handheld.
-- Save games.
+- Save game support.
 
 ## flashing the PicoSystem
 - Download **PicoSystem_InfoNes.uf2** from the [releases page](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases/latest).
@@ -29,13 +29,13 @@ Click on image below to see a demo video.
 
 ## Button maps
 
-- Y: SELECT
-- X: START
+- Y: SELECT on NES
+- X: START on NES
 - Y + X: Reset
 - Y + LEFT: Start uploaded game
-- Y + RIGHT: Start built-in game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
+- Y + RIGHT: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
 
-## Uploading custom roms
+## Uploading game roms
 Load roms by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
 The ROM should be placed at address **0x10090000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
 
