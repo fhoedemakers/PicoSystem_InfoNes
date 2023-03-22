@@ -53,4 +53,9 @@ namespace picosystem {
     Y     = 16
   };
 
+  // utility
+
+  uint32_t    time();
+  uint32_t    time_us();
+  void        sleep(uint32_t d);
 }

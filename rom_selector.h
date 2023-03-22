@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "builtinrom.h"
 //#include "tar.h"
 
 inline bool checkNESMagic(const uint8_t *data)
@@ -20,6 +21,8 @@ inline bool hasNVRAM(const uint8_t *data)
 class ROMSelector
 {
     const uint8_t *singleROM_{};
+    const uint8_t *BuiltInRom_{};
+    const uint8_t *customROM_{};
    // std::vector<TAREntry> entries_;
 
     // int selectedIndex_ = 0;
@@ -28,9 +31,16 @@ public:
     void init(uintptr_t addr)
     {
         auto *p = reinterpret_cast<const uint8_t *>(addr);
+        BuiltInRom_ = reinterpret_cast<const uint8_t *>(builtinrom);
         if (checkNESMagic(p))
         {
-            singleROM_ = p;
+            printf("Found custom rom\n");
+            singleROM_ = customROM_ = p;
+            printf("Single ROM.\n");
+            return;
+        } else {
+            printf("No rom found, starting Blade Buster\n");
+            singleROM_ = customROM_  = BuiltInRom_;
             printf("Single ROM.\n");
             return;
         }
@@ -83,6 +93,15 @@ public:
         return -1;
     }
 
+    void StartCustomRom() {
+            printf("Starting custom rom.\n");
+            singleROM_ = customROM_;
+    }
+
+    void StartBladeBuster() {
+            printf("Starting built-in rom.\n");
+            singleROM_ = BuiltInRom_;
+    }
     // void next()
     // {
     //     if (singleROM_ || entries_.empty())

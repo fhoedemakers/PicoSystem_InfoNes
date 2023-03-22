@@ -25,6 +25,8 @@ pico_enable_stdio_uart(PicoSystem_InfoNes 1)
 pico_enable_stdio_usb(PicoSystem_InfoNes 0)
 
 include(${CMAKE_CURRENT_LIST_DIR}/picosystem/picosystem.cmake REQUIRED)
+pico_set_linker_script(PicoSystem_InfoNes ${PICOSYSTEM_LINKER_SCRIPT})
+message("Linker Script    : ${PICOSYSTEM_LINKER_SCRIPT}")
 target_link_libraries(PicoSystem_InfoNes PRIVATE
     picosystem
     pico_stdlib

@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <algorithm>
+
 // #include "pico/util/queue.h"
 #include "pico/multicore.h"
 
@@ -34,7 +35,7 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
 namespace
 {
-    static constexpr uintptr_t NES_FILE_ADDR = 0x10080000;
+    static constexpr uintptr_t NES_FILE_ADDR = 0x10090000;
     ROMSelector romSelector_;
 }
 
@@ -117,6 +118,10 @@ const WORD __not_in_flash_func(NesPalette)[] = {
 // } queue_entry_t;
 
 // static queue_entry_t entry;
+
+static auto frame = 0;
+static uint32_t start_tick_us = 0;
+static uint32_t fps = 0;
 
 #define SCANLINEBUFFERLINES 24 // Max 40
 #define SCANLINEPIXELS 240     // 320
@@ -269,6 +274,9 @@ bool loadNVRAM()
     return true;
 }
 
+static DWORD prevButtons = 0;
+static int rapidFireMask = 0;
+static int rapidFireCounter = 0;
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
     static constexpr int LEFT = 1 << 6;
@@ -280,14 +288,17 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     static constexpr int A = 1 << 0;
     static constexpr int B = 1 << 1;
 
-    static DWORD prevButtons = 0;
-    static int rapidFireMask = 0;
-    static int rapidFireCounter = 0;
-
+    // moved variables outside function body because prevButtons gets initialized to 0 everytime the function is called.
+    // This is strange because a static variable inside a function is only initialsed once and retains it's value
+    // throughout different function calls.
+    // Am i missing something? 
+    // static DWORD prevButtons = 0;
+    // static int rapidFireMask = 0;
+    // static int rapidFireCounter = 0;
+    
     ++rapidFireCounter;
     bool reset = false;
     picosystem::_gpio_get2();
-
 
     auto &dst = *pdwPad1;
 
@@ -313,20 +324,27 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 
     auto pushed = v & ~prevButtons;
 
+    if (pushed & X)
+    {
+        printf("PrevButtons: %d\n", prevButtons);
+        printf("Pushed: %d\n", pushed) ;
+        printf("%d\n", fps);
+    }
+
     if (p1 & Y)
     {
-        // if (pushed & LEFT)
-        // {
-        //     saveNVRAM();
-        //     romSelector_.prev();
-        //     reset = true;
-        // }
-        // if (pushed & RIGHT)
-        // {
-        //     saveNVRAM();
-        //     romSelector_.next();
-        //     reset = true;
-        // }
+        if (pushed & LEFT)
+        {
+            saveNVRAM();
+            romSelector_.StartCustomRom();
+            reset = true;
+        }
+        if (pushed & RIGHT)
+        {
+            saveNVRAM();
+            romSelector_.StartBladeBuster();
+            reset = true;
+        }
         if (pushed & X)
         {
             saveNVRAM();
@@ -343,7 +361,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     }
 
     prevButtons = v;
-
+   
     *pdwSystem = reset ? PAD_SYS_QUIT : 0;
 }
 
@@ -429,16 +447,25 @@ void __not_in_flash_func(InfoNES_SoundOutput)(int samples, BYTE *wave1, BYTE *wa
 
 extern WORD PC;
 
-static auto frame = 0;
 int InfoNES_LoadFrame()
 {
+
     auto count = frame++;
     auto onOff = hw_divider_s32_quotient_inlined(count, 60) & 1;
 #ifdef LED_ENABLED
     gpio_put(LED_PIN, onOff);
 #endif
-    // vsync??
+    // Not sure if i'm doing the right thing here...
+    // _wait_vsync() makes it run at 41 fps which is too slow for the emulator
     // picosystem::_wait_vsync();
+    // not waiting for vsync goes to 80 frames per second.
+    // Delay 4 milliseconds (4000 microseconds) in order to reach a 60 fps cap.
+    // sleep_ms() does not work.
+    busy_wait_us_32(4000);
+    uint32_t tick_us = picosystem::time_us() - start_tick_us;
+    // calculate fps and round to nearest value (instead of truncating/floor)
+    fps = (1000000 - 1) / tick_us + 1;
+    start_tick_us = picosystem::time_us();
     return count;
 }
 
@@ -534,18 +561,11 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     {
         if (prevbufferIndex != -1)
         {
-            // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
+            // wait untill DMA is ready to write next buffer
             while (picosystem::_is_flipping())
             {
             }
             picosystem::_flipbuffer((void *)scanlinesbuffers[prevbufferIndex], sizeof(scanlinebuffer0) / 4);
-            // FH entry.bufferindex = prevbufferIndex;
-            // FH entry.startframe = startframe;
-            // FH entry.endframe = endframe;
-            // FH queue_add_blocking(&call_queue, &entry);
-            // FH if (frommenu) {
-            //      sleep_ms(5);
-            // FH }
             startframe = endframe = false;
         }
         prevbufferIndex = bufferIndex;
@@ -553,11 +573,9 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     if (line == 0)
     {
         startframe = true;
-        // endframe = false;
     }
     if (line == 239)
     {
-        // startframe = false;
         endframe = true;
     }
 
@@ -738,14 +756,9 @@ int main()
 
     // FH queue_init(&call_queue, sizeof(queue_entry_t), 2);
     // FH multicore_launch_core1(core1_main);
-
-    printf("Initialising Graphics subsystem.\n");
-    // finitgraphics(ROTATE_0, 320, 240);
-    // FH finitgraphics(ROTATE_270, 240, 240);
-
+    romSelector_.init(NES_FILE_ADDR);
     while (true)
     {
-        romSelector_.init(NES_FILE_ADDR);
         InfoNES_Main();
     }
 
