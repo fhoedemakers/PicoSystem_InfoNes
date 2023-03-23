@@ -374,7 +374,7 @@ namespace picosystem {
     _screen_command(VRHS,      1, "\x12");
     _screen_command(VDVS,      1, "\x20");
     _screen_command(PWRCTRL1,  2, "\xA4\xA1");
-    _screen_command(FRCTRL2,   1, "\x1E");
+    _screen_command(FRCTRL2, 1, "\x0F");       // 60 FPS as Suggested by shuichitakano in issue #4, thanks!
     _screen_command(GMCTRP1,  14, "\xD0\x04\x0D\x11\x13\x2B\x3F\x54\x4C\x18\x0D\x0B\x1F\x23");
     _screen_command(GMCTRN1,  14, "\xD0\x04\x0C\x11\x13\x2C\x3F\x44\x51\x2F\x1F\x1F\x20\x23");
     _screen_command(INVON);
