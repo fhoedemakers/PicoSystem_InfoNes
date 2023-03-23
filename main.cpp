@@ -326,8 +326,6 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 
     if (pushed & X)
     {
-        printf("PrevButtons: %d\n", prevButtons);
-        printf("Pushed: %d\n", pushed) ;
         printf("%d\n", fps);
     }
 
@@ -451,17 +449,12 @@ int InfoNES_LoadFrame()
 {
 
     auto count = frame++;
-    auto onOff = hw_divider_s32_quotient_inlined(count, 60) & 1;
 #ifdef LED_ENABLED
+    auto onOff = hw_divider_s32_quotient_inlined(count, 60) & 1;
     gpio_put(LED_PIN, onOff);
 #endif
-    // Not sure if i'm doing the right thing here...
-    // _wait_vsync() makes it run at 41 fps which is too slow for the emulator
-    // picosystem::_wait_vsync();
-    // not waiting for vsync goes to 80 frames per second.
-    // Delay 4 milliseconds (4000 microseconds) in order to reach a 60 fps cap.
-    // sleep_ms() does not work.
-    busy_wait_us_32(4000);
+    // Wait for vsync to pace emulator at 60fps as suggested by shuichitakano in issue #4, thanks!
+    picosystem::_wait_vsync();
     uint32_t tick_us = picosystem::time_us() - start_tick_us;
     // calculate fps and round to nearest value (instead of truncating/floor)
     fps = (1000000 - 1) / tick_us + 1;
