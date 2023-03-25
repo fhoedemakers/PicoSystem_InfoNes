@@ -35,8 +35,8 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
 namespace
 {
-    static constexpr uintptr_t NES_FILE_ADDR         = 0x10110000;
-    static constexpr uintptr_t NES_BATTERY_SAVE_ADDR = 0x100D0000;   // 256K for save games (=32 savegames MAX)
+    static constexpr uintptr_t NES_FILE_ADDR = 0x10110000;
+    static constexpr uintptr_t NES_BATTERY_SAVE_ADDR = 0x100D0000; // 256K for save games (=32 savegames MAX)
     ROMSelector romSelector_;
 }
 
@@ -144,17 +144,43 @@ uint32_t getCurrentNVRAMAddr()
     }
     printf("SRAM slot %d\n", slot);
     // Save Games are stored towards address stored roms.
-    uint32_t saveLocation = NES_BATTERY_SAVE_ADDR + SRAM_SIZE * slot;
-    if ( saveLocation >= NES_FILE_ADDR) {
+    uint32_t saveLocation = NES_BATTERY_SAVE_ADDR + SRAM_SIZE * (slot + 1);
+    if (saveLocation >= NES_FILE_ADDR)
+    {
         printf("No more save slots available, (Requested slot = %d)", slot);
         return {};
     }
     return saveLocation;
 }
 
+void __not_in_flash_func(_saveNVRAM)(uint32_t offset, int8_t currentGameIndex, char advance)
+{
+    static_assert((SRAM_SIZE & (FLASH_SECTOR_SIZE - 1)) == 0);
+
+    uint32_t state = NES_BATTERY_SAVE_ADDR - XIP_BASE;
+    uint32_t ints = save_and_disable_interrupts();
+    // Save SRAM
+    flash_range_erase(offset, SRAM_SIZE);
+    flash_range_program(offset, SRAM, SRAM_SIZE);
+    // Save state
+    SRAM[0] = 'S';
+    SRAM[1] = 'T';
+    SRAM[2] = 'A';
+    SRAM[3] = currentGameIndex;
+    SRAM[4] = advance;
+    flash_range_erase(state, SRAM_SIZE);
+    flash_range_program(state, SRAM, SRAM_SIZE);
+
+    restore_interrupts(ints);
+}
 
 /// about 58 Games exist with save battery
-void saveNVRAM()
+// Problem: First call to saveNVRAM  after power up is ok
+// Second call  causes a crash in flash_range_erase()
+// Because of this we reserve one flash block for saving state of current played game and selected action.
+// Then the RP2040 will be rebooted
+// After reboot, the state will be restored.
+void saveNVRAM(uint8_t statevar, char advance)
 {
     if (!SRAMwritten)
     {
@@ -162,36 +188,36 @@ void saveNVRAM()
         return;
     }
 
-    printf("save SRAM\n");
-
-    static_assert((SRAM_SIZE & (FLASH_SECTOR_SIZE - 1)) == 0);
-    // Problem: First save after power up is ok
-    // Second save causes a crash in flash_range_erase()
     if (auto addr = getCurrentNVRAMAddr())
     {
+        printf("save SRAM\n");
         auto ofs = addr - XIP_BASE;
         printf("write flash %x --> %x\n", addr, ofs);
-        {
-            uint32_t ints = save_and_disable_interrupts();
-            flash_range_erase(ofs, SRAM_SIZE);
-            flash_range_program(ofs, SRAM, SRAM_SIZE);
-            restore_interrupts (ints);
-        }
+        _saveNVRAM(ofs, statevar, advance);
+        printf("done\n");
+        printf("Rebooting...\n");
+        // Reboot after SRAM is flashed
+        watchdog_enable(100, 1);
+        while (1);
     }
-    printf("done\n");
-
     SRAMwritten = false;
+    // reboot
 }
 
 bool loadNVRAM()
 {
-     if (auto addr = getCurrentNVRAMAddr())
+    if (auto addr = getCurrentNVRAMAddr())
     {
         printf("load SRAM %x\n", addr);
         memcpy(SRAM, reinterpret_cast<void *>(addr), SRAM_SIZE);
     }
     SRAMwritten = false;
     return true;
+}
+
+void loadState()
+{
+    memcpy(SRAM, reinterpret_cast<void *>(NES_BATTERY_SAVE_ADDR), SRAM_SIZE);
 }
 
 static DWORD prevButtons = 0;
@@ -253,25 +279,25 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     {
         if (pushed & LEFT)
         {
-            saveNVRAM();
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), '-');
             romSelector_.prev();
             reset = true;
         }
         if (pushed & RIGHT)
         {
-            saveNVRAM();
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), '+');
             romSelector_.next();
             reset = true;
         }
         if (pushed & UP)
         {
-            saveNVRAM();
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'B');
             romSelector_.selectcustomrom();
             reset = true;
         }
         if (pushed & X)
         {
-            saveNVRAM();
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
             reset = true;
         }
         if (pushed & A)
@@ -673,9 +699,36 @@ int main()
     }
 #endif
 
-    // FH queue_init(&call_queue, sizeof(queue_entry_t), 2);
-    // FH multicore_launch_core1(core1_main);
-    romSelector_.init(NES_FILE_ADDR);
+    // When system is rebooted after dlashing SRAM, load the saved state from flash and proceed.
+    loadState();
+    if (watchdog_caused_reboot()  && strncmp((char *)SRAM, "STA", 3) == 0)
+    {
+        // Game which caused the reboot
+        // When reboot is caused by built-in game, startingGame will be -1
+        int8_t startingGame = (int8_t)SRAM[3];
+        printf("Game caused reboot: %d\n", startingGame);
+        // + start next Game
+        // - start previous game 
+        // R restart current game
+        // B Start built-in Game
+        char advance = (char)SRAM[4];
+        int tmpGame = startingGame;
+        // When coming from built-in game, just start the first game.
+        if ( tmpGame == -1 && advance != 'R' ) tmpGame = 0;
+        romSelector_.init(NES_FILE_ADDR, tmpGame);
+        if (startingGame >= 0 && advance != 'R')   // R = Reset
+        {
+            if (advance == '+') romSelector_.next();
+            if (advance == '-') romSelector_.prev();
+            if (advance == 'B') romSelector_.selectcustomrom();
+        }
+        prevButtons = -1;
+    }
+    else
+    {
+        romSelector_.init(NES_FILE_ADDR, 0);
+    }
+
     while (true)
     {
         InfoNES_Main();
