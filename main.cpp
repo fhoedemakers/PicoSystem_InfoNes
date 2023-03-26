@@ -35,8 +35,11 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
 namespace
 {
-    static constexpr uintptr_t NES_FILE_ADDR = 0x10110000;
-    static constexpr uintptr_t NES_BATTERY_SAVE_ADDR = 0x100D0000; // 256K for save games (=32 savegames MAX)
+    static constexpr uintptr_t NES_FILE_ADDR = 0x10110000;         // Location of .nes rom or tar archive with .nes roms
+    static constexpr uintptr_t NES_BATTERY_SAVE_ADDR = 0x100D0000; // 256K 
+                                                                   //  = 8K   D0000 - 0D1FFF for persisting some variables after reboot
+                                                                   //  = 248K D2000 - 10FFFF for save games (=31 savegames MAX)
+                                                                   // grows towards NES_FILE_ADDR
     ROMSelector romSelector_;
 }
 
@@ -652,7 +655,9 @@ int main()
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
 
     stdio_init_all();
+    //printf("Start program, flash size = %d\n", PICO_FLASH_SIZE_BYTES);
     printf("Start program\n");
+
 #ifdef LED_ENABLED
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
