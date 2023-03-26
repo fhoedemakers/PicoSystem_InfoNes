@@ -27,7 +27,7 @@ class ROMSelector
     int selectedIndex_ = 0;
 
 public:
-    void init(uintptr_t addr)
+    void init(uintptr_t addr, int startingRom)
     {
         auto *p = reinterpret_cast<const uint8_t *>(addr);
         BuiltInRom_ = reinterpret_cast<const uint8_t *>(builtinrom);
@@ -43,6 +43,11 @@ public:
         for (auto &e : entries_)
         {
             printf("  %s: %p, %zd\n", e.filename.data(), e.data, e.size);
+        }
+        if (startingRom == -1) {
+            startBuiltIn_ = true;
+        } else {
+            selectedIndex_ = startingRom;
         }
     }
 
@@ -166,6 +171,9 @@ public:
         }
     }
 
+    uint8_t GetCurrentRomIndex() const {
+        return (startBuiltIn_ ? -1 : selectedIndex_);
+    }
     void selectcustomrom() {
         startBuiltIn_ = true;
     }
