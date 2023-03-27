@@ -38,12 +38,12 @@ Click on image below to see a demo video.
 
 ## Uploading game roms
 Load roms by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
-The ROM should be placed at address **0x10090000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
+The ROM should be placed at address **0x10110000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
 
 ```
-picotool load rom.nes -t bin -o 0x10090000
+picotool load rom.nes -t bin -o 0x10110000
 ```
-**Attention: the upload address has been changed from 0x10080000 to 0x10090000.** This is because of the additional size of the built-in game baked into the executable.
+**Attention: the upload address has been changed from 0x10080000 to 0x10110000.** This is because of the additional size of the built-in game baked into the executable.
 
 ## Screen Resolution
 The original Nintendo Entertainment System has a resolution of 256x240 pixels. The PicoSystem has a resolution of 240x240 pixels. Therefore, on the PicoSystem the first and last 8 Pixels of each horizontal line are not visible.
