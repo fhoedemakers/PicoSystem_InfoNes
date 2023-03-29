@@ -36,6 +36,8 @@ The ROM should be placed at address **0x10110000**, and can be  transferred usin
 picotool load rom.nes -t bin -o 0x10110000
 ```
 
+**Attention: the upload address has been changed from 0x10080000 to 0x10110000.** This is because of the additional size of the built-in game baked into the executable.
+
 ## Uploading multiple games
 
 TODO
@@ -57,7 +59,7 @@ TODO
 - B : Exit meni
 
 
-**Attention: the upload address has been changed from 0x10080000 to 0x10110000.** This is because of the additional size of the built-in game baked into the executable.
+
 
 ## Screen Resolution
 The original Nintendo Entertainment System has a resolution of 256x240 pixels. The PicoSystem has a resolution of 240x240 pixels. Therefore, on the PicoSystem the first and last 8 Pixels of each horizontal line are not visible.
