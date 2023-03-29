@@ -28,8 +28,8 @@ Click on image below to see a demo video.
 - Push and hold the X button then the power-on button. Release the buttons and the drive RPI-RP2 appears on your computer.
 - Drag and drop the UF2 file on to the RPI-RP2 drive. The PicoSystem will reboot and will now run the emulator.
 
-## Uploading single game rom
-Load roms by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
+## Uploading single game
+Load single game rom by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
 The ROM should be placed at address **0x10110000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
 
 ```
