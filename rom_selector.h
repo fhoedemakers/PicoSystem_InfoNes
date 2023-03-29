@@ -173,6 +173,16 @@ public:
         if ( startBuiltIn_) return BUILTINROMNAME ;
         return (char *)extractTAREntryatindex(selectedIndex_, tarAddress,checkNESMagic).filename.data();
     }
+
+    void setRomIndex(int index) {
+        if ( numberOfEntries > 0 ) {
+            if ( index >= 0 && index < numberOfEntries) {
+                selectedIndex_ = index;
+                startBuiltIn_ = false;
+            }
+
+        }
+    }
 };
 
 #endif /* _22B2B909_1134_6471_AE6D_14EF3AF46BF0 */

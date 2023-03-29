@@ -17,6 +17,9 @@ pico_sdk_init()
 add_executable(PicoSystem_InfoNes
     main.cpp
     tar.cpp
+    menu.cpp
+    RomLister.cpp
+    assets/builtinrom.c
 )
 
 pico_set_program_name(PicoSystem_InfoNes "PicoSystem_InfoNes")

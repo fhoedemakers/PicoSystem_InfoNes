@@ -115,10 +115,10 @@ int GetValidTAREntries(const void *_p, bool (*validateEntry)(const uint8_t *))
         {
             count++;
         }
-        else
-        {
-            printf("Invalid: %s: %d\n", p, size.value());
-        }
+        // else
+        // {
+        //     printf("Invalid: %s: %d\n", p, size.value());
+        // }
         p += (size.value() + 512 + 511) & ~511;
     }
     return count;
