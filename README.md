@@ -28,21 +28,35 @@ Click on image below to see a demo video.
 - Push and hold the X button then the power-on button. Release the buttons and the drive RPI-RP2 appears on your computer.
 - Drag and drop the UF2 file on to the RPI-RP2 drive. The PicoSystem will reboot and will now run the emulator.
 
-## Button maps
-
-- Y: SELECT on NES
-- X: START on NES
-- Y + X: Reset
-- Y + LEFT: Start uploaded game
-- Y + RIGHT: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
-
-## Uploading game roms
+## Uploading single game rom
 Load roms by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
 The ROM should be placed at address **0x10110000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
 
 ```
 picotool load rom.nes -t bin -o 0x10110000
 ```
+
+## Uploading multiple games
+
+TODO
+
+## Button maps
+
+- Y: is mapped to NES Select
+- X: is mapped to NES Start
+
+### In-game
+- Y + X: Open menu
+- Y + LEFT: Previous game
+- Y + RIGHT: Next Game
+- Y + UP: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
+
+### In-Menu
+- Up/DOWN: Scroll through list
+- A : Start selected game
+- B : Exit meni
+
+
 **Attention: the upload address has been changed from 0x10080000 to 0x10110000.** This is because of the additional size of the built-in game baked into the executable.
 
 ## Screen Resolution
