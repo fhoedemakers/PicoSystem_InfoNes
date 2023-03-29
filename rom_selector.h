@@ -22,13 +22,16 @@ class ROMSelector
 {
     const uint8_t *singleROM_{};
     const uint8_t *BuiltInRom_{};
-    std::vector<TAREntry> entries_;
     int startBuiltIn_ = false;
     int selectedIndex_ = 0;
+    int numberOfEntries = 0;
+    const uint8_t *tarAddress{};
+    
 
 public:
     void init(uintptr_t addr, int startingRom)
     {
+       
         auto *p = reinterpret_cast<const uint8_t *>(addr);
         BuiltInRom_ = reinterpret_cast<const uint8_t *>(builtinrom);
         if (checkNESMagic(p))
@@ -37,12 +40,16 @@ public:
             printf("Single ROM.\n");
             return;
         }
-
-        entries_ = parseTAR(p, checkNESMagic);
-        printf("%zd ROMs.\n", entries_.size());
-        for (auto &e : entries_)
-        {
-            printf("  %s: %p, %zd\n", e.filename.data(), e.data, e.size);
+        numberOfEntries = GetValidTAREntries(p, checkNESMagic);
+        if (numberOfEntries > 0) {
+             tarAddress = p;
+        }
+        printf("%zd ROMs.\n", numberOfEntries);
+        for (int i=0; i< numberOfEntries; i++) {
+            TAREntry e = extractTAREntryatindex(i, p,checkNESMagic);
+            if ( e.data ) {
+                printf("  %s: %p, %zd\n", e.filename.data(), e.data, e.size);
+            }
         }
         if (startingRom == -1) {
             startBuiltIn_ = true;
@@ -51,22 +58,6 @@ public:
         }
     }
 
-  
-    std::string_view GetRomname() {
-        if (startBuiltIn_ == false)
-        {
-            if (singleROM_)
-            {
-                return "unknown";
-            }
-            if (!entries_.empty())
-            {
-                return entries_[selectedIndex_].filename;
-            }
-        } else {
-            return BUILTINROMNAME;
-        }
-    }
     const bool isBuiltInRomPlaying()  const {
         return startBuiltIn_;
     }
@@ -79,9 +70,8 @@ public:
             {
                 return singleROM_;
             }
-            if (!entries_.empty())
-            {
-                return entries_[selectedIndex_].data;
+            if ( numberOfEntries ) {
+                return extractTAREntryatindex(selectedIndex_, tarAddress,checkNESMagic).data;
             }
         }
         return BuiltInRom_;
@@ -121,7 +111,7 @@ public:
         int foundSlot = -1;
         for (int i = 0; i <= selectedIndex_; ++i)
         {
-            if (hasNVRAM(entries_[i].data))
+            if (hasNVRAM(extractTAREntryatindex(i, tarAddress,checkNESMagic).data))
             {             
                 ++slot;
                 if ( i == selectedIndex_) {
@@ -142,13 +132,13 @@ public:
     void next()
     {
         startBuiltIn_  = false;
-        if (singleROM_ || entries_.empty())
+        if (singleROM_ || numberOfEntries == 0)
         {
             return;
         }
         ++selectedIndex_;
         printf("Next: Selected Index %d\n", selectedIndex_);
-        if (selectedIndex_ == static_cast<int>(entries_.size()))
+        if (selectedIndex_ == numberOfEntries)
         {
             selectedIndex_ = 0;
              printf("Next: reset Index %d\n", selectedIndex_);
@@ -158,7 +148,7 @@ public:
     void prev()
     {
         startBuiltIn_  = false;
-        if (singleROM_ || entries_.empty())
+        if (singleROM_ || numberOfEntries == 0)
         {
             return;
         }
@@ -166,7 +156,7 @@ public:
         printf("Prev: Selected Index %d\n", selectedIndex_);
         if (selectedIndex_ < 0)
         {
-            selectedIndex_ = static_cast<int>(entries_.size() - 1);
+            selectedIndex_ = numberOfEntries -1;
             printf("Prev: reset Index %d\n", selectedIndex_);
         }
     }
@@ -176,6 +166,12 @@ public:
     }
     void selectcustomrom() {
         startBuiltIn_ = true;
+    }
+
+    const char *GetCurrentGameName() {
+     
+        if ( startBuiltIn_) return BUILTINROMNAME ;
+        return (char *)extractTAREntryatindex(selectedIndex_, tarAddress,checkNESMagic).filename.data();
     }
 };
 

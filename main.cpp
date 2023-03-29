@@ -735,7 +735,9 @@ int main()
     }
 
     while (true)
-    {
+    {       
+        int index = romSelector_.GetCurrentRomIndex();
+        printf("Starting '%s'.\n", romSelector_.GetCurrentGameName());
         InfoNES_Main();
     }
 
