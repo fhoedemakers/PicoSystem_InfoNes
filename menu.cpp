@@ -299,7 +299,7 @@ void showSplashScreen()
         }
         DrawScreen(-1);
         RomSelect_PadState(&PAD1_Latch);
-        if (PAD1_Latch > 0 || (frameCount - startFrame) > 1000)
+        if (PAD1_Latch > 0 || (frameCount - startFrame) > 250)
         {
             return;
         }
