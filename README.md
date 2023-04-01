@@ -7,7 +7,7 @@ Emulater is now bundled with the freeware homebrew game [Blade Buster](https://w
 
 [A pre-release .uf2 binary to flash on your picosystem can be found here.](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases)
 
-Now you can play Nintendo multiple NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld. A menu system is included for choosing your games to play.
+Now you can store and play Nintendo multiple NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld. A menu system is included for choosing your games to play.
 
 (Note: Screenshots below do not represent the actual picture quality. The distortion is caused by the camera)
 ![image](assets/gamescreen.jpeg)
@@ -28,6 +28,8 @@ Click on image below to see a demo video.
 Since there is no SD card slot available, a companion app for Microsoft Windows is created that lets the user choose games and flash them to the Pico.
 [More information here](https://github.com/fhoedemakers/PicoSystemInfoNesLoader). The app is included in the latest release. 
 The application also allows you to flash the emulator when not installed or a newer version is available. No more need for manually flashing.
+
+![image](assets/Screen.png)
 
 ## Manually flashing the PicoSystem
 - Download **PicoSystem_InfoNes.uf2** from the [releases page](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases/latest).
