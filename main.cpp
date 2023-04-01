@@ -29,19 +29,25 @@
 #include "rom_selector.h"
 
 #include "hardware.hpp"
+#include "gpbuttons.h"
+#include "menu.h"
+
 #ifdef LED_ENABLED
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 #endif
 
 namespace
 {
-    static constexpr uintptr_t NES_FILE_ADDR = 0x10090000;
+    static constexpr uintptr_t NES_FILE_ADDR = 0x10110000;         // Location of .nes rom or tar archive with .nes roms
+    static constexpr uintptr_t NES_BATTERY_SAVE_ADDR = 0x100D0000; // 256K 
+                                                                   //  = 8K   D0000 - 0D1FFF for persisting some variables after reboot
+                                                                   //  = 248K D2000 - 10FFFF for save games (=31 savegames MAX)
+                                                                   // grows towards NES_FILE_ADDR
     ROMSelector romSelector_;
 }
 
 // color table in aaaarrrrggggbbbb format
 // converted from http://wiki.picosystem.com/en/tools/image-converter
-// Not quite satisfied yet...
 const WORD __not_in_flash_func(NesPalette)[] = {
     0x77f7,  // 00
     0x37f0,  // 01
@@ -132,6 +138,7 @@ WORD *scanlinesbuffers[] = {scanlinebuffer0, scanlinebuffer1};
 
 uint32_t getCurrentNVRAMAddr()
 {
+
     if (!romSelector_.getCurrentROM())
     {
         return {};
@@ -142,175 +149,120 @@ uint32_t getCurrentNVRAMAddr()
         return {};
     }
     printf("SRAM slot %d\n", slot);
-    return NES_FILE_ADDR - SRAM_SIZE * (slot + 1);
+    // Save Games are stored towards address stored roms.
+    uint32_t saveLocation = NES_BATTERY_SAVE_ADDR + SRAM_SIZE * (slot + 1);
+    if (saveLocation >= NES_FILE_ADDR)
+    {
+        printf("No more save slots available, (Requested slot = %d)", slot);
+        return {};
+    }
+    return saveLocation;
 }
 
-// void saveNVRAM()
-// {
-//     if (!SRAMwritten)
-//     {
-//         printf("SRAM not updated.\n");
-//         return;
-//     }
-
-//     printf("save SRAM\n");
-//     exclProc_.setProcAndWait([]
-//                              {
-//         static_assert((SRAM_SIZE & (FLASH_SECTOR_SIZE - 1)) == 0);
-//         if (auto addr = getCurrentNVRAMAddr())
-//         {
-//             auto ofs = addr - XIP_BASE;
-//             printf("write flash %x\n", ofs);
-//             {
-//                 flash_range_erase(ofs, SRAM_SIZE);
-//                 flash_range_program(ofs, SRAM, SRAM_SIZE);
-//             }
-//         } });
-//     printf("done\n");
-
-//     SRAMwritten = false;
-// }
-// void loadNVRAM()
-// {
-//     if (auto addr = getCurrentNVRAMAddr())
-//     {
-//         printf("load SRAM %x\n", addr);
-//         memcpy(SRAM, reinterpret_cast<void *>(addr), SRAM_SIZE);
-//     }
-//     SRAMwritten = false;
-// }
-
-void saveNVRAM()
+void __not_in_flash_func(_saveNVRAM)(uint32_t offset, int8_t currentGameIndex, char advance)
 {
-    // char pad[FF_MAX_LFN];
+    static_assert((SRAM_SIZE & (FLASH_SECTOR_SIZE - 1)) == 0);
 
-    // if (!SRAMwritten)
-    // {
-    //     printf("SRAM not updated.\n");
-    //     return;
-    // }
-    // snprintf(pad, FF_MAX_LFN, "%s/%s.SAV", GAMESAVEDIR, romName);
-    // printf("save SRAM to %s\n", pad);
-    // FIL fil;
-    // FRESULT fr;
-    // fr = f_open(&fil, pad, FA_CREATE_ALWAYS | FA_WRITE);
-    // if (fr != FR_OK)
-    // {
-    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot open save file: %d", fr);
-    //     printf("%s\n", ErrorMessage);
-    //     return;
-    // }
-    // size_t bytesWritten;
-    // fr = f_write(&fil, SRAM, SRAM_SIZE, &bytesWritten);
-    // if (bytesWritten < SRAM_SIZE)
-    // {
-    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Error writing save: %d %d/%d written", fr, bytesWritten, SRAM_SIZE);
-    //     printf("%s\n", ErrorMessage);
-    // }
-    // f_close(&fil);
-    // printf("done\n");
-    // SRAMwritten = false;
+    uint32_t state = NES_BATTERY_SAVE_ADDR - XIP_BASE;
+    uint32_t ints = save_and_disable_interrupts();
+    // Save SRAM
+    flash_range_erase(offset, SRAM_SIZE);
+    flash_range_program(offset, SRAM, SRAM_SIZE);
+    // Save state
+    SRAM[0] = 'S';
+    SRAM[1] = 'T';
+    SRAM[2] = 'A';
+    SRAM[3] = currentGameIndex;
+    SRAM[4] = advance;
+    flash_range_erase(state, SRAM_SIZE);
+    flash_range_program(state, SRAM, SRAM_SIZE);
+
+    restore_interrupts(ints);
+}
+
+/// about 58 Games exist with save battery
+// Problem: First call to saveNVRAM  after power up is ok
+// Second call  causes a crash in flash_range_erase()
+// Because of this we reserve one flash block for saving state of current played game and selected action.
+// Then the RP2040 will be rebooted
+// After reboot, the state will be restored.
+void saveNVRAM(uint8_t statevar, char advance)
+{
+    if (!SRAMwritten)
+    {
+        printf("SRAM not updated.\n");
+        return;
+    }
+
+    if (auto addr = getCurrentNVRAMAddr())
+    {
+        printf("save SRAM\n");
+        auto ofs = addr - XIP_BASE;
+        printf("write flash %x --> %x\n", addr, ofs);
+        _saveNVRAM(ofs, statevar, advance);
+        printf("done\n");
+        printf("Rebooting...\n");
+        // Reboot after SRAM is flashed
+        watchdog_enable(100, 1);
+        while (1);
+    }
+    SRAMwritten = false;
+    // reboot
 }
 
 bool loadNVRAM()
 {
-    // char pad[FF_MAX_LFN];
-    // FILINFO fno;
-    // bool ok = false;
-    // snprintf(pad, FF_MAX_LFN, "%s/%s.SAV", GAMESAVEDIR, romName);
-    // FIL fil;
-    // FRESULT fr;
-
-    // size_t bytesRead;
-    // if (auto addr = getCurrentNVRAMAddr())
-    // {
-    //     fr = f_stat(pad, &fno);
-    //     if (fr == FR_NO_FILE)
-    //     {
-    //         printf("Save file not found, load SRAM from flash %x\n", addr);
-    //         memcpy(SRAM, reinterpret_cast<void *>(addr), SRAM_SIZE);
-    //         ok = true;
-    //     }
-    //     else
-    //     {
-    //         if (fr == FR_OK)
-    //         {
-    //             printf("Loading save file %s\n", pad);
-    //             fr = f_open(&fil, pad, FA_READ);
-    //             if (fr == FR_OK)
-    //             {
-    //                 fr = f_read(&fil, SRAM, SRAM_SIZE, &bytesRead);
-    //                 if (fr == FR_OK)
-    //                 {
-    //                     printf("Savefile read from disk\n");
-    //                     ok = true;
-    //                 }
-    //                 else
-    //                 {
-    //                     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot read save file: %d %d/%d read", fr, bytesRead, SRAM_SIZE);
-    //                     printf("%s\n", ErrorMessage);
-    //                 }
-    //             }
-    //             else
-    //             {
-    //                 snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot open save file: %d", fr);
-    //                 printf("%s\n", ErrorMessage);
-    //             }
-    //             f_close(&fil);
-    //         }
-    //         else
-    //         {
-    //             snprintf(ErrorMessage, ERRORMESSAGESIZE, "f_stat() failed on save file: %d", fr);
-    //             printf("%s\n", ErrorMessage);
-    //         }
-    //     }
-    // }
-    // else
-    // {
-    //     ok = true;
-    // }
-    // SRAMwritten = false;
-    // return ok;
+    if (auto addr = getCurrentNVRAMAddr())
+    {
+        printf("load SRAM %x\n", addr);
+        memcpy(SRAM, reinterpret_cast<void *>(addr), SRAM_SIZE);
+    }
+    SRAMwritten = false;
     return true;
 }
 
+void loadState()
+{
+    memcpy(SRAM, reinterpret_cast<void *>(NES_BATTERY_SAVE_ADDR), SRAM_SIZE);
+}
+
+int getbuttons() {
+     picosystem::_gpio_get2();
+     return (picosystem::button(picosystem::LEFT) ? GPLEFT : 0) |
+            (picosystem::button(picosystem::RIGHT) ? GPRIGHT : 0) |
+            (picosystem::button(picosystem::UP) ? GPUP : 0) |
+            (picosystem::button(picosystem::DOWN) ? GPDOWN : 0) |
+            (picosystem::button(picosystem::Y) ? GPY : 0) |
+            (picosystem::button(picosystem::X) ? GPX : 0) |
+            (picosystem::button(picosystem::A) ? GPA : 0) |
+            (picosystem::button(picosystem::B) ? GPB : 0) |
+            0;
+
+}
 static DWORD prevButtons = 0;
 static int rapidFireMask = 0;
 static int rapidFireCounter = 0;
+static  bool jumptomenu = false;
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
-    static constexpr int LEFT = 1 << 6;
-    static constexpr int RIGHT = 1 << 7;
-    static constexpr int UP = 1 << 4;
-    static constexpr int DOWN = 1 << 5;
-    static constexpr int Y = 1 << 2;
-    static constexpr int X = 1 << 3;
-    static constexpr int A = 1 << 0;
-    static constexpr int B = 1 << 1;
+    
 
     // moved variables outside function body because prevButtons gets initialized to 0 everytime the function is called.
     // This is strange because a static variable inside a function is only initialsed once and retains it's value
     // throughout different function calls.
-    // Am i missing something? 
+    // Am i missing something?
     // static DWORD prevButtons = 0;
     // static int rapidFireMask = 0;
     // static int rapidFireCounter = 0;
-    
+
     ++rapidFireCounter;
-    bool reset = false;
-    picosystem::_gpio_get2();
+    bool reset = jumptomenu = false;
+   
 
     auto &dst = *pdwPad1;
 
-    int v = (picosystem::button(picosystem::LEFT) ? LEFT : 0) |
-            (picosystem::button(picosystem::RIGHT) ? RIGHT : 0) |
-            (picosystem::button(picosystem::UP) ? UP : 0) |
-            (picosystem::button(picosystem::DOWN) ? DOWN : 0) |
-            (picosystem::button(picosystem::Y) ? Y : 0) |
-            (picosystem::button(picosystem::X) ? X : 0) |
-            (picosystem::button(picosystem::A) ? A : 0) |
-            (picosystem::button(picosystem::B) ? B : 0) |
-            0;
+    int v = getbuttons();
+
     int rv = v;
     if (rapidFireCounter & 2)
     {
@@ -324,42 +276,49 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 
     auto pushed = v & ~prevButtons;
 
-    if (pushed & X)
+    if (pushed & GPX)
     {
         printf("%d\n", fps);
     }
 
-    if (p1 & Y)
+    if (p1 & GPY)
     {
-        if (pushed & LEFT)
+        if (pushed & GPLEFT)
         {
-            saveNVRAM();
-            romSelector_.StartCustomRom();
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), '-');
+            romSelector_.prev();
             reset = true;
         }
-        if (pushed & RIGHT)
+        if (pushed & GPRIGHT)
         {
-            saveNVRAM();
-            romSelector_.StartBladeBuster();
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), '+');
+            romSelector_.next();
             reset = true;
         }
-        if (pushed & X)
+        if (pushed & GPUP)
         {
-            saveNVRAM();
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'B');
+            romSelector_.selectcustomrom();
             reset = true;
         }
-        if (pushed & A)
+        if (pushed & GPX)
+        {
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
+            reset = true;
+            jumptomenu = true;
+        }
+        if (pushed & GPA)
         {
             // rapidFireMask[i] ^= io::GamePadState::Button::A;
         }
-        if (pushed & B)
+        if (pushed & GPB)
         {
             // rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
     }
 
     prevButtons = v;
-   
+
     *pdwSystem = reset ? PAD_SYS_QUIT : 0;
 }
 
@@ -492,42 +451,14 @@ static int prevbufferIndex = -1;
 static int lineInBuffer = 0;
 void __not_in_flash_func(InfoNES_PreDrawLine)(int line)
 {
-    // util::WorkMeterMark(0xaaaa);
-    // auto b = &lb[0];
-    // util::WorkMeterMark(0x5555);
-
-    // b.size --> 640
-    // printf("Pre Draw%d\n", b->size());
-    // WORD = 2 bytes
-    // b->size = 640
-    // printf("%d\n", b->size());
-    // InfoNES_SetLineBuffer(b->data() + 32, b->size());
-    // InfoNES_SetLineBuffer(b, sizeof(lb));
-    //
-    // #define SCANLINEBUFFERLINES 20
-    // #define SCANLINEPIXELS      320
-    // #define SCANLINEBYTESIZE = (SCANLINEPIXELS * sizeof(WORD))
-    // WORD scanlinebuffer0[SCANLINEPIXELS * SCANLINEBUFFERLINES];
-    // WORD scanlinebuffer1[SCANLINEPIXELS * SCANLINEBUFFERLINES];
-    // WORD *scanlinesbuffers[] = { scanlinebuffer0, scanlinebuffer1 };
-    // 0 / 30  = 0   0000      0 % 30 = 0  1 % 30 = 1 ...
-    // 30 / 30 = 1   0001
-    // 60 / 30 = 2   0010
-    // 90 / 30 = 3   0011
-    // 120/ 30 = 4   0100
-    // 150 / 30 = 5  0101
-    // 180 / 30 = 6  0110
-    // 210 / 30 = 7  0111
+    
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
-    // if (line == 4)
-    // {
-    //     memset(scanlinesbuffers[bufferIndex], 0, 640 * 4);
-    // }
+    
     WORD *b = scanlinesbuffers[bufferIndex] + lineInBuffer * SCANLINEPIXELS;
-    // InfoNES_SetLineBuffer(b + 32, SCANLINEBYTESIZE);
+   
     InfoNES_SetLineBuffer(lb, sizeof(lb));
-    //    (*b)[319] = line + dvi_->getFrameCounter();
+  
 
     currentLineBuffer_ = lb;
 }
@@ -536,6 +467,10 @@ bool endframe = false;
 
 void __not_in_flash_func(RomSelect_PreDrawLine)(int line)
 {
+    bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
+   lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
+    RomSelect_SetLineBuffer(lb, sizeof(lb));
+   currentLineBuffer_ = lb;
 }
 
 void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
@@ -692,15 +627,18 @@ bool initSDCard()
 using namespace picosystem;
 int main()
 {
-
+    char errorMessage[30];
+    strcpy(errorMessage, "");
     _init_hardware();
     _start_audio();
-    backlight(75);
+    backlight(100);
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
 
     stdio_init_all();
+    //printf("Start program, flash size = %d\n", PICO_FLASH_SIZE_BYTES);
     printf("Start program\n");
+
 #ifdef LED_ENABLED
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
@@ -747,12 +685,53 @@ int main()
     }
 #endif
 
-    // FH queue_init(&call_queue, sizeof(queue_entry_t), 2);
-    // FH multicore_launch_core1(core1_main);
-    romSelector_.init(NES_FILE_ADDR);
-    while (true)
+    // When system is rebooted after dlashing SRAM, load the saved state from flash and proceed.
+    loadState();
+    
+    if (watchdog_caused_reboot()  && strncmp((char *)SRAM, "STA", 3) == 0)
     {
+        
+        // Game which caused the reboot
+        // When reboot is caused by built-in game, startingGame will be -1
+        int8_t startingGame = (int8_t)SRAM[3];
+        printf("Game caused reboot: %d\n", startingGame);
+        // + start next Game
+        // - start previous game 
+        // R reset to menu
+        // B Start built-in Game
+        char advance = (char)SRAM[4];
+        int tmpGame = startingGame;
+        // When coming from built-in game, just start the first game.
+        if ( tmpGame == -1 && advance != 'R' ) tmpGame = 0;
+        romSelector_.init(NES_FILE_ADDR, tmpGame);
+        if (startingGame >= 0 && advance != 'R')   // R = Reset
+        {
+            if (advance == '+') romSelector_.next();
+            if (advance == '-') romSelector_.prev();
+           
+        }
+         if (advance == 'B') romSelector_.selectcustomrom();
+        if (advance == 'R') {
+             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage, true));
+        }
+        prevButtons = -1;
+    }
+    else
+    {
+        
+        romSelector_.init(NES_FILE_ADDR, 0);
+        romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage));
+       
+    }
+
+    while (true)
+    {       
+        int index = romSelector_.GetCurrentRomIndex();
+        printf("Starting '%s'.\n", romSelector_.GetCurrentGameName());
         InfoNES_Main();
+        if ( jumptomenu  ) {
+            romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage));
+        }
     }
 
     return 0;

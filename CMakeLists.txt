@@ -16,10 +16,14 @@ pico_sdk_init()
 
 add_executable(PicoSystem_InfoNes
     main.cpp
+    tar.cpp
+    menu.cpp
+    RomLister.cpp
+    assets/builtinrom.c
 )
 
 pico_set_program_name(PicoSystem_InfoNes "PicoSystem_InfoNes")
-pico_set_program_version(PicoSystem_InfoNes "0.1")
+pico_set_program_version(PicoSystem_InfoNes "v0.4-alpha")
 
 pico_enable_stdio_uart(PicoSystem_InfoNes 1)
 pico_enable_stdio_usb(PicoSystem_InfoNes 0)
