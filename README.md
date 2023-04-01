@@ -9,7 +9,10 @@ Emulater is now bundled with the freeware homebrew game [Blade Buster](https://w
 
 Now you can play Nintendo NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld.
 
+(Note: Screenshots below do not represent the actual picture quality. The distortion is caused by the camera)
 ![image](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/assets/PicoSystem.jpg)
+
+![image](assets/menuscreen.jpeg)
 
 Click on image below to see a demo video.
 
@@ -19,8 +22,6 @@ Click on image below to see a demo video.
 
 - Sound has to be implemented. Will be a challenge since the PicoSystem has as simple Piezo buzzer/speaker which has not the capabilities for generating proper sound from the NES. 
 - Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
-- Companion App in Microsoft Windows for uploading roms to the handheld.
-- Save game support.
 
 ## flashing the PicoSystem
 - Download **PicoSystem_InfoNes.uf2** from the [releases page](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases/latest).
@@ -28,7 +29,11 @@ Click on image below to see a demo video.
 - Push and hold the X button then the power-on button. Release the buttons and the drive RPI-RP2 appears on your computer.
 - Drag and drop the UF2 file on to the RPI-RP2 drive. The PicoSystem will reboot and will now run the emulator.
 
-## Uploading single game
+## Uploading games
+There is a companion app for Microsoft Windows available that lets the user choose games and flash them to the Pico.
+[More information here](). The app is included in the releases
+
+## Manually uploading a game
 Load single game rom by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
 The ROM should be placed at address **0x10110000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
 
@@ -38,9 +43,6 @@ picotool load rom.nes -t bin -o 0x10110000
 
 **Attention: the upload address has been changed from 0x10080000 to 0x10110000.** This is because of the additional size of the built-in game baked into the executable.
 
-## Uploading multiple games
-
-TODO
 
 ## Button maps
 
