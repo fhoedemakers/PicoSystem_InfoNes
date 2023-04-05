@@ -47,6 +47,11 @@ namespace
 }
 
 // color table in aaaarrrrggggbbbb format
+//  a = alpha - 4 bit
+//  r = red - 4 bit
+//  g = green - 4 bit
+//  b = blue - 4 bit
+// Colors are stored as ggggbbbbaaaarrrr
 // converted from http://wiki.picosystem.com/en/tools/image-converter
 const WORD __not_in_flash_func(NesPalette)[] = {
     0x77f7,  // 00
