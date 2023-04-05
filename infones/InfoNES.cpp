@@ -879,10 +879,14 @@ namespace
       auto proc = [=](int i) __attribute__((always_inline))
       {
         int v = spr[i];
-        if (v && ((v >> 7) || (buf[i] >> 15)))
+        //if (v && ((v >> 7) || (buf[i] >> 15))   
+        // Are alpha bits zero? (set in K6502_rw.h)
+        if (v && ((v >> 7) || !(buf[i] & 0xF0)))
         {
           buf[i] = pal[v & 0xf];
         }
+        // set alpha bits back to 1
+        buf[i] |= 0xF0;
       };
 
 #if 1

@@ -345,12 +345,16 @@ static inline void __not_in_flash_func(K6502_Write)(WORD wAddr, BYTE byData)
         // Palette mirror
         PPURAM[0x3f10] = PPURAM[0x3f14] = PPURAM[0x3f18] = PPURAM[0x3f1c] =
             PPURAM[0x3f00] = PPURAM[0x3f04] = PPURAM[0x3f08] = PPURAM[0x3f0c] = byData;
-        // FH or- color with 0x8000 results in an incorrect rendered color on screen.
-        // Need some more testing.
+        // Frank Hoedemakers 
+        // or-ing color with 0x8000 results in an incorrect rendered color on screen. (bit is set in the Green channel which causes 
+        // green in stead of black backgrounds).
+        // The original color scheme the emulator used, did not suffer from this.
+        // Setting the leftmost bit using this or-statement is intended as a flag tested in compositeSprite in InfoNES.cpp.
+        // In stead of setting the leftmost bit, the alpha bits will be cleared
         // PalTable[0x00] = PalTable[0x04] = PalTable[0x08] = PalTable[0x0c] =
         //     PalTable[0x10] = PalTable[0x14] = PalTable[0x18] = PalTable[0x1c] = NesPalette[byData] | 0x8000;
         PalTable[0x00] = PalTable[0x04] = PalTable[0x08] = PalTable[0x0c] =
-            PalTable[0x10] = PalTable[0x14] = PalTable[0x18] = PalTable[0x1c] = NesPalette[byData];
+            PalTable[0x10] = PalTable[0x14] = PalTable[0x18] = PalTable[0x1c] = NesPalette[byData] & 0xFF0F;
       }
       else if (addr & 3)
       {
