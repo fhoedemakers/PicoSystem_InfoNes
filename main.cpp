@@ -32,6 +32,10 @@
 #include "gpbuttons.h"
 #include "menu.h"
 
+bool fps_enabled = false;
+
+#include "font_8x8.h"
+
 #ifdef LED_ENABLED
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 #endif
@@ -39,7 +43,7 @@ const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 namespace
 {
     static constexpr uintptr_t NES_FILE_ADDR = 0x10110000;         // Location of .nes rom or tar archive with .nes roms
-    static constexpr uintptr_t NES_BATTERY_SAVE_ADDR = 0x100D0000; // 256K 
+    static constexpr uintptr_t NES_BATTERY_SAVE_ADDR = 0x100D0000; // 256K
                                                                    //  = 8K   D0000 - 0D1FFF for persisting some variables after reboot
                                                                    //  = 248K D2000 - 10FFFF for save games (=31 savegames MAX)
                                                                    // grows towards NES_FILE_ADDR
@@ -209,7 +213,8 @@ void saveNVRAM(uint8_t statevar, char advance)
         printf("Rebooting...\n");
         // Reboot after SRAM is flashed
         watchdog_enable(100, 1);
-        while (1);
+        while (1)
+            ;
     }
     SRAMwritten = false;
     // reboot
@@ -231,26 +236,25 @@ void loadState()
     memcpy(SRAM, reinterpret_cast<void *>(NES_BATTERY_SAVE_ADDR), SRAM_SIZE);
 }
 
-int getbuttons() {
-     picosystem::_gpio_get2();
-     return (picosystem::button(picosystem::LEFT) ? GPLEFT : 0) |
-            (picosystem::button(picosystem::RIGHT) ? GPRIGHT : 0) |
-            (picosystem::button(picosystem::UP) ? GPUP : 0) |
-            (picosystem::button(picosystem::DOWN) ? GPDOWN : 0) |
-            (picosystem::button(picosystem::Y) ? GPY : 0) |
-            (picosystem::button(picosystem::X) ? GPX : 0) |
-            (picosystem::button(picosystem::A) ? GPA : 0) |
-            (picosystem::button(picosystem::B) ? GPB : 0) |
-            0;
-
+int getbuttons()
+{
+    picosystem::_gpio_get2();
+    return (picosystem::button(picosystem::LEFT) ? GPLEFT : 0) |
+           (picosystem::button(picosystem::RIGHT) ? GPRIGHT : 0) |
+           (picosystem::button(picosystem::UP) ? GPUP : 0) |
+           (picosystem::button(picosystem::DOWN) ? GPDOWN : 0) |
+           (picosystem::button(picosystem::Y) ? GPY : 0) |
+           (picosystem::button(picosystem::X) ? GPX : 0) |
+           (picosystem::button(picosystem::A) ? GPA : 0) |
+           (picosystem::button(picosystem::B) ? GPB : 0) |
+           0;
 }
 static DWORD prevButtons = 0;
 static int rapidFireMask = 0;
 static int rapidFireCounter = 0;
-static  bool jumptomenu = false;
+static bool jumptomenu = false;
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
-    
 
     // moved variables outside function body because prevButtons gets initialized to 0 everytime the function is called.
     // This is strange because a static variable inside a function is only initialsed once and retains it's value
@@ -262,7 +266,6 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 
     ++rapidFireCounter;
     bool reset = jumptomenu = false;
-   
 
     auto &dst = *pdwPad1;
 
@@ -285,7 +288,12 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     {
         printf("%d\n", fps);
     }
-
+    if ( p1 & GPX ) {
+        if (pushed & GPA) {
+            fps_enabled = !fps_enabled;
+            printf("Show fps: %d\n", fps_enabled);
+        }
+    }
     if (p1 & GPY)
     {
         if (pushed & GPLEFT)
@@ -456,26 +464,26 @@ static int prevbufferIndex = -1;
 static int lineInBuffer = 0;
 void __not_in_flash_func(InfoNES_PreDrawLine)(int line)
 {
-    
+
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
-    
+
     WORD *b = scanlinesbuffers[bufferIndex] + lineInBuffer * SCANLINEPIXELS;
-   
+
     InfoNES_SetLineBuffer(lb, sizeof(lb));
-  
 
     currentLineBuffer_ = lb;
 }
+
 bool startframe = false;
 bool endframe = false;
 
 void __not_in_flash_func(RomSelect_PreDrawLine)(int line)
 {
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
-   lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
+    lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
     RomSelect_SetLineBuffer(lb, sizeof(lb));
-   currentLineBuffer_ = lb;
+    currentLineBuffer_ = lb;
 }
 
 void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
@@ -484,6 +492,40 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     util::WorkMeterMark(0xffff);
     drawWorkMeter(line);
 #endif
+
+
+   
+    if (fps_enabled && line >= 8 && line < 16)
+    {
+        char fpsString[2];
+        WORD *fpsBuffer = lb + 8;
+        WORD fgc = NesPalette[48];
+        WORD bgc = NesPalette[15];
+        fpsString[0] = '0' + (fps / 10);
+        fpsString[1] = '0' + (fps % 10);
+        
+        int rowInChar = line % 8;
+        for (auto i = 0; i < 2; i++)
+        {
+            char firstFpsDigit = fpsString[i];
+           
+            char fontSlice = font_8x8[(firstFpsDigit - 32) + (rowInChar)*95];
+            for (auto bit = 0; bit < 8; bit++)
+            {
+                if (fontSlice & 1)
+                {
+                    *fpsBuffer++ = fgc;
+                }
+                else
+                {
+                     *fpsBuffer++ = bgc;
+                }
+                fontSlice >>= 1;
+                // WorkLineRom++;
+            }
+        }
+    }
+
 
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
@@ -641,7 +683,7 @@ int main()
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
 
     stdio_init_all();
-    //printf("Start program, flash size = %d\n", PICO_FLASH_SIZE_BYTES);
+    // printf("Start program, flash size = %d\n", PICO_FLASH_SIZE_BYTES);
     printf("Start program\n");
 
 #ifdef LED_ENABLED
@@ -692,49 +734,53 @@ int main()
 
     // When system is rebooted after dlashing SRAM, load the saved state from flash and proceed.
     loadState();
-    
-    if (watchdog_caused_reboot()  && strncmp((char *)SRAM, "STA", 3) == 0)
+
+    if (watchdog_caused_reboot() && strncmp((char *)SRAM, "STA", 3) == 0)
     {
-        
+
         // Game which caused the reboot
         // When reboot is caused by built-in game, startingGame will be -1
         int8_t startingGame = (int8_t)SRAM[3];
         printf("Game caused reboot: %d\n", startingGame);
         // + start next Game
-        // - start previous game 
+        // - start previous game
         // R reset to menu
         // B Start built-in Game
         char advance = (char)SRAM[4];
         int tmpGame = startingGame;
         // When coming from built-in game, just start the first game.
-        if ( tmpGame == -1 && advance != 'R' ) tmpGame = 0;
+        if (tmpGame == -1 && advance != 'R')
+            tmpGame = 0;
         romSelector_.init(NES_FILE_ADDR, tmpGame);
-        if (startingGame >= 0 && advance != 'R')   // R = Reset
+        if (startingGame >= 0 && advance != 'R') // R = Reset
         {
-            if (advance == '+') romSelector_.next();
-            if (advance == '-') romSelector_.prev();
-           
+            if (advance == '+')
+                romSelector_.next();
+            if (advance == '-')
+                romSelector_.prev();
         }
-         if (advance == 'B') romSelector_.selectcustomrom();
-        if (advance == 'R') {
-             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage, true));
+        if (advance == 'B')
+            romSelector_.selectcustomrom();
+        if (advance == 'R')
+        {
+            romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage, true));
         }
         prevButtons = -1;
     }
     else
     {
-        
+
         romSelector_.init(NES_FILE_ADDR, 0);
         romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage));
-       
     }
 
     while (true)
-    {       
+    {
         int index = romSelector_.GetCurrentRomIndex();
         printf("Starting '%s'.\n", romSelector_.GetCurrentGameName());
         InfoNES_Main();
-        if ( jumptomenu  ) {
+        if (jumptomenu)
+        {
             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage));
         }
     }
