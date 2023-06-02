@@ -29,7 +29,7 @@ namespace picosystem {
   uint32_t          dma_channel;
   volatile int16_t  dma_scanline = -1;
 
-  uint32_t         _audio_pwm_wrap = 5000;
+// uint32_t         _audio_pwm_wrap = 5000;
   struct repeating_timer _audio_update_timer;
 
   enum pin {
@@ -233,6 +233,7 @@ namespace picosystem {
   }
 
   void _play_note(uint32_t f, uint32_t v) {
+      /*
     // adjust the clock divider to achieve this desired frequency
     #ifndef NO_OVERCLOCK
       float clock = 250000000.0f;
@@ -240,7 +241,7 @@ namespace picosystem {
       float clock = 125000000.0f;
     #endif
 
-    float pwm_divider = clock / _audio_pwm_wrap / f;
+    float pwm_divider = clock / f;//_audio_pwm_wrap / f;
     pwm_set_clkdiv(pwm_gpio_to_slice_num(AUDIO), pwm_divider);
     pwm_set_wrap(pwm_gpio_to_slice_num(AUDIO), _audio_pwm_wrap);
 
@@ -259,6 +260,7 @@ namespace picosystem {
     float curve = 1.8f;
     uint32_t level = (pow((float)(v) / 100.0f, curve) * max_count);
     pwm_set_gpio_level(AUDIO, level);
+  */
   }
 
   void led(uint8_t r, uint8_t g, uint8_t b) {
@@ -420,11 +422,11 @@ namespace picosystem {
     irq_set_enabled(DMA_IRQ_0, true);
 
     // initialise audio pwm pin
-    int audio_pwm_slice_number = pwm_gpio_to_slice_num(AUDIO);
+   /* int audio_pwm_slice_number = pwm_gpio_to_slice_num(AUDIO);
     pwm_config audio_pwm_cfg = pwm_get_default_config();
     pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
-    pwm_set_gpio_level(AUDIO, 0);
+    pwm_set_gpio_level(AUDIO, 0);*/
   }
 
 }

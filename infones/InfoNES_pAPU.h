@@ -101,7 +101,7 @@
 /*-------------------------------------------------------------------*/
 
 //#define APU_EVENT_MAX 15000
-#define APU_EVENT_MAX 100
+#define APU_EVENT_MAX 735
 
 struct ApuEvent_t
 {

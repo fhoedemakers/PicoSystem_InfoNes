@@ -93,8 +93,8 @@ ApuWritefunc pAPUSoundRegs[20] =
 /*-------------------------------------------------------------------*/
 /*   APU resources                                                   */
 /*-------------------------------------------------------------------*/
-
-BYTE wave_buffers[5][735]; /* 44100 / 60 = 735 samples per sync */
+const unsigned int buffersize = 735;
+BYTE wave_buffers[5][buffersize]; /* 44100 / 60 = 735 samples per sync */
 
 BYTE ApuCtrl;
 BYTE ApuCtrlNew;
@@ -128,7 +128,8 @@ struct ApuQualityData_t
     // {0x289d9c00, 0x289d9c00, 0x289d9c00, 735, 41, 44100, 265664},
     {0xa2567000, 0xa2567000, 0xa2567000, 45963, 164, 11025, 664935},
     {0x512b3800, 0x512b3800, 0x512b3800, 91926, 82, 22050, 1329870},
-    {0x289d9c00, 0x289d9c00, 0x289d9c00, 184402, 41, 44100, 2659741},
+    {0xa2567000, 0xa2567000, 0xa2567000, 184402, 41, 44100, 2659741}
+    //{0x289d9c00, 0x289d9c00, 0x289d9c00, 184402, 41, 44100, 2659741},
 };
 
 // 44100/60/262*65536 = 183850.99236641222
@@ -1259,11 +1260,11 @@ void InfoNES_pAPUInit(void)
   /*-------------------------------------------------------------------*/
   /*   Initialize Wave Buffers                                         */
   /*-------------------------------------------------------------------*/
-  InfoNES_MemorySet((void *)wave_buffers[0], 0, 735);
-  InfoNES_MemorySet((void *)wave_buffers[1], 0, 735);
-  InfoNES_MemorySet((void *)wave_buffers[2], 0, 735);
-  InfoNES_MemorySet((void *)wave_buffers[3], 0, 735);
-  InfoNES_MemorySet((void *)wave_buffers[4], 0, 735);
+  InfoNES_MemorySet((void *)wave_buffers[0], 0, buffersize);
+  InfoNES_MemorySet((void *)wave_buffers[1], 0, buffersize);
+  InfoNES_MemorySet((void *)wave_buffers[2], 0, buffersize);
+  InfoNES_MemorySet((void *)wave_buffers[3], 0, buffersize);
+  InfoNES_MemorySet((void *)wave_buffers[4], 0, buffersize);
 
   entertime = getPassedClocks();
   cur_event = 0;

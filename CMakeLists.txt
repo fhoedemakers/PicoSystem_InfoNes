@@ -1,4 +1,4 @@
-# pico-infonesPlus 
+# pico-infonesPlus
 cmake_minimum_required(VERSION 3.13)
 
 
@@ -23,10 +23,10 @@ add_executable(PicoSystem_InfoNes
 )
 
 pico_set_program_name(PicoSystem_InfoNes "PicoSystem_InfoNes")
-pico_set_program_version(PicoSystem_InfoNes "v0.5-alpha")
+pico_set_program_version(PicoSystem_InfoNes "v0.51-alpha")
 
-pico_enable_stdio_uart(PicoSystem_InfoNes 1)
-pico_enable_stdio_usb(PicoSystem_InfoNes 0)
+pico_enable_stdio_uart(PicoSystem_InfoNes 0)
+pico_enable_stdio_usb(PicoSystem_InfoNes 1)
 
 include(${CMAKE_CURRENT_LIST_DIR}/picosystem/picosystem.cmake REQUIRED)
 pico_set_linker_script(PicoSystem_InfoNes ${PICOSYSTEM_LINKER_SCRIPT})
@@ -54,8 +54,8 @@ target_link_libraries(PicoSystem_InfoNes PRIVATE
         .
     )
 
-   
-  
+
+
     add_subdirectory(infones)
 
     pico_add_extra_outputs(PicoSystem_InfoNes)

@@ -31,7 +31,7 @@
 #include "hardware.hpp"
 #include "gpbuttons.h"
 #include "menu.h"
-
+#include "picosystem_infones_audio.cpp"
 bool fps_enabled = false;
 
 #include "font_8x8.h"
@@ -137,6 +137,7 @@ const WORD __not_in_flash_func(NesPalette)[] = {
 static auto frame = 0;
 static uint32_t start_tick_us = 0;
 static uint32_t fps = 0;
+
 
 #define SCANLINEBUFFERLINES 24 // Max 40
 #define SCANLINEPIXELS 240     // 320
@@ -288,8 +289,10 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     {
         printf("%d\n", fps);
     }
-    if ( p1 & GPX ) {
-        if (pushed & GPA) {
+    if ( p1 & GPX )
+        {
+        if (pushed & GPA)
+        {
             fps_enabled = !fps_enabled;
             printf("Show fps: %d\n", fps_enabled);
         }
@@ -301,12 +304,41 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
             saveNVRAM(romSelector_.GetCurrentRomIndex(), '-');
             romSelector_.prev();
             reset = true;
+            /*
+            if (picosystem::audioMode == picosystem::EAudioMode::BuzzerOnly)
+            {
+                picosystem::_audio_pwm_wrap -= 1000;
+                if (picosystem::_audio_pwm_wrap < 255)
+                    {picosystem::_audio_pwm_wrap = 255;}
+            }
+            else if (picosystem::audioMode == picosystem::EAudioMode::SpeakerOnly)
+            {
+                  picosystem::_audio_pwm_wrap2 -= 1000;
+                if (picosystem::_audio_pwm_wrap2 < 255)
+                    {picosystem::_audio_pwm_wrap2 = 255;}
+            }
+              else if (picosystem::audioMode == picosystem::EAudioMode::Both)
+            {
+                 picosystem::perframesamples=std::max(1,picosystem::perframesamples-10);
+            }*/
         }
         if (pushed & GPRIGHT)
         {
             saveNVRAM(romSelector_.GetCurrentRomIndex(), '+');
             romSelector_.next();
             reset = true;
+            /*if (picosystem::audioMode == picosystem::EAudioMode::BuzzerOnly)
+            {
+             picosystem::_audio_pwm_wrap += 1000;
+            }
+             else if (picosystem::audioMode == picosystem::EAudioMode::SpeakerOnly)
+            {
+                 picosystem::_audio_pwm_wrap2 += 1000;
+            }
+            else if (picosystem::audioMode == picosystem::EAudioMode::Both)
+            {
+                 picosystem::perframesamples=std::min(240,picosystem::perframesamples+10);
+            }*/
         }
         if (pushed & GPUP)
         {
@@ -314,20 +346,33 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
             romSelector_.selectcustomrom();
             reset = true;
         }
+        if (pushed & GPA)
+        {
+            picosystem::volume=std::min(100,picosystem::volume+5);
+
+
+
+        }
+        if (pushed & GPB)
+        {
+            picosystem::volume=std::max(0,picosystem::volume-5);
+
+        }
         if (pushed & GPX)
         {
             saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
             reset = true;
             jumptomenu = true;
+            picosystem::stopAudio();
+
         }
-        if (pushed & GPA)
+
+        if (pushed & GPDOWN)
         {
-            // rapidFireMask[i] ^= io::GamePadState::Button::A;
-        }
-        if (pushed & GPB)
-        {
+             picosystem::updatesoundmode(++picosystem::audiomode%4);
             // rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
+
     }
 
     prevButtons = v;
@@ -395,6 +440,7 @@ void InfoNES_ReleaseRom()
 
 void InfoNES_SoundInit()
 {
+    picosystem::initAudio();
 }
 
 int InfoNES_SoundOpen(int samples_per_sync, int sample_rate)
@@ -404,15 +450,17 @@ int InfoNES_SoundOpen(int samples_per_sync, int sample_rate)
 
 void InfoNES_SoundClose()
 {
+    picosystem::soundOn =false;
 }
 
 int __not_in_flash_func(InfoNES_GetSoundBufferSize)()
 {
-    return 0;
+    return picosystem::SAMPLERATE;
 }
 
 void __not_in_flash_func(InfoNES_SoundOutput)(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYTE *wave4, BYTE *wave5)
 {
+   picosystem::setbuffer(samples,wave1,wave2,wave3,wave4,wave5);
 }
 
 extern WORD PC;
@@ -494,7 +542,7 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
 #endif
 
 
-   
+
     if (fps_enabled && line >= 8 && line < 16)
     {
         char fpsString[2];
@@ -503,12 +551,12 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         WORD bgc = NesPalette[15];
         fpsString[0] = '0' + (fps / 10);
         fpsString[1] = '0' + (fps % 10);
-        
+
         int rowInChar = line % 8;
         for (auto i = 0; i < 2; i++)
         {
             char firstFpsDigit = fpsString[i];
-           
+
             char fontSlice = font_8x8[(firstFpsDigit - 32) + (rowInChar)*95];
             for (auto bit = 0; bit < 8; bit++)
             {
@@ -548,12 +596,21 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     if (line == 0)
     {
         startframe = true;
-    }
-    if (line == 239)
-    {
-        endframe = true;
+
+
     }
 
+        if (line+1 % (240/picosystem::perframesamples) == 1)
+        {
+              picosystem::playaudio();
+
+        }
+
+
+    if (line == 239)
+        {
+             endframe = true;
+        }
     assert(currentLineBuffer_);
 
     currentLineBuffer_ = nullptr;
@@ -728,7 +785,7 @@ int main()
             printf("\n");
 
             addr += 128;
-        } while (buf[126]); 
+        } while (buf[126]);
     }
 #endif
 
@@ -781,6 +838,7 @@ int main()
         InfoNES_Main();
         if (jumptomenu)
         {
+            //picosystem::stopAudio();
             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage));
         }
     }
