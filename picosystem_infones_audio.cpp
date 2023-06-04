@@ -23,23 +23,23 @@ namespace picosystem{
  EAudioMode audioMode = BuzzerOnly;
  bool soundOn= false;
  bool mute = false;
-const int SAMPLERATE = 390;
-BYTE audiobuffer [SAMPLERATE];
+const int SAMPLERATE = 41;
+uint16_t audiobuffer [200];
 int audiomode=0;
 //int playbackrate = 100; //in ms
 int samplecount = 0;
 int cursample = 0;
-int freq =1200;
-int perframesamples = 60;
+//int freq =600;
+int perframesamples = 41;
 //int sampledelay = 1;
 //int perframesamples_speakermod = 8;
-uint32_t sfreq =1200;
-int volume = 80;
+//uint32_t sfreq =1200;
+int volume = 60;
 int pin = 1 ;// rx = 1 , pin tx = 0 //cmake uart disabled, usb enabled.
 int AUDIO = 11;
 
-uint32_t         _audio_pwm_wrap = 10000;
-uint32_t         _audio_pwm_wrap2 = 10000;//speaker
+uint32_t         _audio_pwm_wrap = 9000;
+uint32_t         _audio_pwm_wrap2 = 9000;//speaker
 bool speakeron = false;
 bool buzzeron = false;
    #ifndef NO_OVERCLOCK
@@ -72,7 +72,6 @@ void initAudio()
     pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
 
-    pwm_set_gpio_level(AUDIO, 0);
 buzzeron = true;
     }
     else if (buzzeron)
@@ -100,7 +99,7 @@ void stopAudio()
     }
     if (audioMode== EAudioMode::BuzzerOnly|| audioMode == EAudioMode::Both)
     {
-     pwm_set_gpio_level(AUDIO, 0);
+        pwm_set_gpio_level(AUDIO, 0);
     }
 }
 
@@ -109,11 +108,21 @@ void stopAudio()
 //raw buffer
  if (samples)
     {
+
         for (int i = 0 ; i < samples; i++)
         {
-            unsigned int incoming = wave1[i]  + wave2[i]  + wave3[i]  + wave4[i]  + wave5[i]/5;//overflow protection?
+            BYTE in = wave1[i]/5; //<< 8;
+            //in = in & wave1[i+1];
+            in += wave2[i]/5; // << 8;
+            //in &= wave2[i+1];
+            in += wave3[i]/5; // << 8;
+            //in &= wave3[i+1];
+            in += wave4[i]/5; // << 8;
+            //in &= wave4[i+1];
+            in += wave5[i]/5; // << 8;
+            //in &= wave5[i+1];
+            audiobuffer[i] = in;
 
-            audiobuffer[i] = incoming;
             //avg_wave[i]= wave1[i]  + wave2[i]/2;
             //avg_wave[i]*= freq/255;
             //avg_wave[i] = avg_wave[i]*4 % 2000;
@@ -129,40 +138,33 @@ void stopAudio()
 }
 
 
-
-
 void playsamples_buzzer()
 {
    if (!mute )
    {
-    uint32_t v = volume;
-     uint32_t f=  audiobuffer[cursample]*freq /255;
+       //picosystem audio from hardware method.
 
+    uint16_t v = volume;
+     //uint16_t f=  audiobuffer[cursample];//*freq /60000;
+     BYTE f = audiobuffer[cursample];
     #ifndef NO_OVERCLOCK
       float clock = 250000000.0f;
     #else
       float clock = 125000000.0f;
     #endif
-
-    float pwm_divider = clock / _audio_pwm_wrap / f;
+    float pwm_divider = clock / _audio_pwm_wrap / (f*16);
     pwm_set_clkdiv(pwm_gpio_to_slice_num(AUDIO), pwm_divider);
     pwm_set_wrap(pwm_gpio_to_slice_num(AUDIO), _audio_pwm_wrap);
 
-    // work out usable range of volumes at this frequency. the piezo speaker
-    // isn't driven in a way that can control volume easily however if we're
-    // clever with the duty cycle we can ensure that the ceramic doesn't have
-    // time to fully deflect - effectively reducing the volume.
-    //
-    // through experiment it seems that constraining the deflection period of
-    // the piezo to between 0 and 1/10000th of a second gives reasonable control
-    // over the volume. the relationship is non linear so we also apply a
-    // correction curve which is tuned so that the result sounds reasonable.
-    uint32_t max_count = (f * _audio_pwm_wrap) / 10000;
-
-    // the change in volume isn't linear - we correct for this here
+    //level
+    uint16_t max_count = (f *16* _audio_pwm_wrap) / 10000;// / 10000;
     float curve = 1.8f;
-    uint32_t level = (pow((float)(v) / 100.0f, curve) * max_count);
+    uint16_t level = (pow((float)(v) / 100.0f, curve) * max_count);
     pwm_set_gpio_level(AUDIO, level);
+
+
+
+
    }
 
 }
@@ -170,16 +172,11 @@ void playsamples_speaker()
 {
 if (!mute )
    {
-    uint32_t v = volume;
-     uint32_t f=  audiobuffer[cursample]*sfreq /255;
+    uint16_t v = volume;
+     uint16_t f=  audiobuffer[cursample];//*sfreq /60000;
 
-    #ifndef NO_OVERCLOCK
-      float clock = 250000000.0f;
-    #else
-      float clock = 125000000.0f;
-    #endif
 
-    float pwm_divider = clock / _audio_pwm_wrap2 / f;
+    float pwm_divider = clock / _audio_pwm_wrap2 / (f*16);
     pwm_set_clkdiv(pwm_gpio_to_slice_num(pin), pwm_divider);
     pwm_set_wrap(pwm_gpio_to_slice_num(pin), _audio_pwm_wrap2);
 
@@ -192,11 +189,11 @@ if (!mute )
     // the piezo to between 0 and 1/10000th of a second gives reasonable control
     // over the volume. the relationship is non linear so we also apply a
     // correction curve which is tuned so that the result sounds reasonable.
-    uint32_t max_count = (f * _audio_pwm_wrap2) / 10000;
+    uint16_t max_count = (f *16* _audio_pwm_wrap2) / 10000;
 
     // the change in volume isn't linear - we correct for this here
     float curve = 1.8f;
-    uint32_t level = (pow((float)(v) / 100.0f, curve) * max_count);
+    uint16_t level = (pow((float)(v) / 100.0f, curve) * max_count);
     pwm_set_gpio_level(pin, level);
    }
 
@@ -222,7 +219,10 @@ if (!mute )
         }
 
              cursample++;
-
+        if(cursample > samplecount)
+        {
+            stopAudio();
+        }
 
     }
     else
