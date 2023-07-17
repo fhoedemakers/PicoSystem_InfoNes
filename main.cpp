@@ -34,6 +34,10 @@
 
 bool fps_enabled = false;
 
+//final wave buffer
+int fw_wr, fw_rd;
+int final_wave[2][735+1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
+
 #include "font_8x8.h"
 
 #ifdef LED_ENABLED
@@ -413,6 +417,16 @@ int __not_in_flash_func(InfoNES_GetSoundBufferSize)()
 
 void __not_in_flash_func(InfoNES_SoundOutput)(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYTE *wave4, BYTE *wave5)
 {
+	int i, j;
+    j = 1 - fw_wr;
+
+    for (i = 0; i < samples; i++){
+     	final_wave[j][i] = 
+    	 ( (unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] 
+		 + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * (PWM_RANGE_BITS - 2);
+    }
+    final_wave[j][i] = -1;
+    fw_wr = j;
 }
 
 extern WORD PC;
@@ -672,12 +686,38 @@ bool initSDCard()
     return true;
 }
 using namespace picosystem;
+
+void fw_callback() {
+	uint64_t et, nt;
+	int i;
+	while(1){
+	    while(fw_wr == fw_rd){
+			sleep_us(1);
+		}
+		for(i = 0; final_wave[fw_rd][i] != -1; i++){
+			et = to_us_since_boot(get_absolute_time());
+			nt = et + SAMPLE_INTERVAL; // defined at infoNES_pAPU.h
+			picosystem::psg_vol(final_wave[fw_rd][i]);
+			while(et < nt){
+				et = to_us_since_boot(get_absolute_time());
+				sleep_us(1);
+			}
+		}
+		fw_rd = fw_wr;
+	}
+}
+
+
 int main()
 {
     char errorMessage[30];
     strcpy(errorMessage, "");
     _init_hardware();
-    _start_audio();
+//    _start_audio();
+//
+	fw_wr = fw_rd = 1;
+	multicore_launch_core1(fw_callback);
+
     backlight(100);
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));

@@ -23,7 +23,6 @@
 #include "picosystem.hpp"
 
 namespace picosystem {
-
   PIO               screen_pio  = pio0;
   uint              screen_sm   = 0;
   uint32_t          dma_channel;
@@ -293,6 +292,10 @@ namespace picosystem {
   void _start_audio() {
     add_repeating_timer_ms(-1, _audio_update_callback, NULL, &_audio_update_timer);
   }
+  
+  void psg_vol(int value) {
+    pwm_set_gpio_level(AUDIO, value);
+  }
 
   void _init_hardware() {
     // configure backlight pwm and disable backlight while setting up
@@ -425,6 +428,11 @@ namespace picosystem {
     pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
     pwm_set_gpio_level(AUDIO, 0);
+
+	// limit sound frequency below 10khz to protect piezo.
+	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
+	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
+    pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
   }
 
 }
