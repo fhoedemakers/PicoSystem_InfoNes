@@ -1,6 +1,6 @@
 # PicoSystem_InfoNes a NES emulator for the Pimoroni PicoSystem RP2040 gaming handheld
 ``
-!!!This is a work in progress, there are still lots of things to do Also currently there is no sound output!!!
+!!!This is an experimentarl branch to support PWM audio from [Fhoedemakers github.](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases)
 ``
 
 Emulater is now bundled with the freeware homebrew game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html).
