@@ -425,7 +425,7 @@ namespace picosystem {
     // initialise audio pwm pin
     int audio_pwm_slice_number = pwm_gpio_to_slice_num(AUDIO);
     pwm_config audio_pwm_cfg = pwm_get_default_config();
-    pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
+
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
     pwm_set_gpio_level(AUDIO, 0);
 
@@ -433,6 +433,7 @@ namespace picosystem {
 	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
 	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
     pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
+    pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
   }
 
 }

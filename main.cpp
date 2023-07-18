@@ -412,21 +412,20 @@ void InfoNES_SoundClose()
 
 int __not_in_flash_func(InfoNES_GetSoundBufferSize)()
 {
-    return 0;
+    return 1;
 }
 
-void __not_in_flash_func(InfoNES_SoundOutput)(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYTE *wave4, BYTE *wave5)
+void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYTE *wave4, BYTE *wave5)
 {
-	int i, j;
-    j = 1 - fw_wr;
-
+	int i;
+	
     for (i = 0; i < samples; i++){
-     	final_wave[j][i] = 
+     	final_wave[fw_wr][i] = 
     	 ( (unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] 
 		 + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * (PWM_RANGE_BITS - 2);
     }
-    final_wave[j][i] = -1;
-    fw_wr = j;
+    final_wave[fw_wr][i] = -1;
+    fw_wr = 1 - fw_wr;
 }
 
 extern WORD PC;
@@ -715,7 +714,7 @@ int main()
     _init_hardware();
 //    _start_audio();
 //
-	fw_wr = fw_rd = 1;
+	fw_wr = fw_rd = 0;
 	multicore_launch_core1(fw_callback);
 
     backlight(100);
