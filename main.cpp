@@ -37,7 +37,7 @@ bool fps_enabled = false;
 //final wave buffer
 int fw_wr, fw_rd;
 int final_wave[2][735+1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
-#define FW_VOL_MAX 15
+#define FW_VOL_MAX 12
 int fw_vol;
 #define FW_VOL_GAP 10
 int fw_div;
