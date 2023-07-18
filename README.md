@@ -46,6 +46,18 @@ picotool load rom.nes -t bin -o 0x10110000
 
 **Attention: the upload address has been changed from 0x10080000 to 0x10110000.** This is because of the additional size of the built-in game baked into the executable.
 
+## Manually uploading multiple games
+
+> All games must have the .nes extension and must be in the same directory
+
+This can be done by creating a tar archive and upload this archive to the PicoSystem. The maxium size of the archive is be about 15MB
+
+```bash
+# current directory must contain the .nes roms
+tar cvf games.tar *.nes
+picotool load games.tar -t bin -o 0x10110000
+```
+
 
 ## Button maps
 
