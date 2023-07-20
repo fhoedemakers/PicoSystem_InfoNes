@@ -36,14 +36,14 @@ bool fps_enabled = false;
 
 //final wave buffer
 int fw_wr, fw_rd;
-int final_wave[2][735+1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
+unsigned int final_wave[2][735+1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
 #define FW_VOL_MAX 200
 int fw_vol;
 #define FW_VOL_GAP 1
 int fw_div;
 //change volume
-unsigned char volume = 50;
-unsigned char volume_increment = 10;
+unsigned char volume =100;
+unsigned char volume_increment = 20;
 #include "font_8x8.h"
 
 #ifdef LED_ENABLED
@@ -338,7 +338,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
         }
         if (pushed & GPA)
         {
-            volume = (volume + volume_increment > FW_VOL_MAX) ? volume = 200 : volume = volume + volume_increment;
+            volume = (volume + volume_increment > FW_VOL_MAX) ? volume = FW_VOL_MAX : volume = volume + volume_increment;
             set_fw_vol(volume);
             // rapidFireMask[i] ^= io::GamePadState::Button::A;
         }
@@ -436,9 +436,9 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
 	int i;
 	
     for (i = 0; i < samples; i++){
-     	final_wave[fw_wr][i] = 
-    	 ( (unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] 
-		 + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * fw_vol / fw_div;
+        final_wave[fw_wr][i] =
+            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i]
+                + (unsigned char)wave4[i] + (unsigned char)wave5[i])/5;
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -712,7 +712,8 @@ void fw_callback() {
 		for(i = 0; final_wave[fw_rd][i] != -1; i++){
 			et = to_us_since_boot(get_absolute_time());
 			nt = et + SAMPLE_INTERVAL; // defined at infoNES_pAPU.h
-			picosystem::psg_vol(final_wave[fw_rd][i]);
+           
+			picosystem::psg_vol(final_wave[fw_rd][i] *fw_vol / fw_div);
 			while(et < nt){
 				et = to_us_since_boot(get_absolute_time());
 				sleep_us(1);

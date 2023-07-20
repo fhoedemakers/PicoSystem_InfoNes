@@ -168,8 +168,8 @@ void InfoNES_pAPUHsync(bool enabled);
 /* these values subject to change without notice.                    */
 /*-------------------------------------------------------------------*/
 extern int ApuQuality;
-#define pAPU_QUALITY 1 // to save battery...
-#define SAMPLE_INTERVAL 90 // 1,000,000 us / 11015Hz
+#define pAPU_QUALITY 3 // to save battery...
+#define SAMPLE_INTERVAL 23 // 1,000,000 us / 11015Hz
 
 /*-------------------------------------------------------------------*/
 /*  Rectangle Wave #1 resources                                      */
