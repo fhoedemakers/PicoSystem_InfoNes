@@ -37,11 +37,13 @@ bool fps_enabled = false;
 //final wave buffer
 int fw_wr, fw_rd;
 int final_wave[2][735+1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
-#define FW_VOL_MAX 12
+#define FW_VOL_MAX 200
 int fw_vol;
-#define FW_VOL_GAP 10
+#define FW_VOL_GAP 1
 int fw_div;
-
+//change volume
+unsigned char volume = 50;
+unsigned char volume_increment = 10;
 #include "font_8x8.h"
 
 #ifdef LED_ENABLED
@@ -261,6 +263,12 @@ static DWORD prevButtons = 0;
 static int rapidFireMask = 0;
 static int rapidFireCounter = 0;
 static bool jumptomenu = false;
+
+
+void set_fw_vol(unsigned int i) {
+    fw_vol = (i > FW_VOL_MAX) ? FW_VOL_MAX : i;
+    fw_div = (FW_VOL_MAX - i) * FW_VOL_GAP + 1;
+}
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
 
@@ -330,10 +338,14 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
         }
         if (pushed & GPA)
         {
+            volume = (volume + volume_increment > FW_VOL_MAX) ? volume = 200 : volume = volume + volume_increment;
+            set_fw_vol(volume);
             // rapidFireMask[i] ^= io::GamePadState::Button::A;
         }
         if (pushed & GPB)
         {
+            volume = (volume - volume_increment < 0) ? volume = 0 : volume = volume - volume_increment;
+            set_fw_vol(volume);
             // rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
     }
@@ -417,11 +429,6 @@ void InfoNES_SoundClose()
 int __not_in_flash_func(InfoNES_GetSoundBufferSize)()
 {
     return 735;
-}
-
-void set_fw_vol(unsigned int i){
-    fw_vol = (i > FW_VOL_MAX) ? FW_VOL_MAX: i;
-    fw_div = (FW_VOL_MAX - i) * FW_VOL_GAP + 1;
 }
 
 void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYTE *wave4, BYTE *wave5)
@@ -722,7 +729,7 @@ int main()
     strcpy(errorMessage, "");
     _init_hardware();
 //    _start_audio();
-    set_fw_vol(FW_VOL_MAX);
+    set_fw_vol(50);
 //    set_fw_vol(0); // for mute
 
     fw_wr = fw_rd = 0;
