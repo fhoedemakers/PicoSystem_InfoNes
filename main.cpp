@@ -37,13 +37,10 @@ bool fps_enabled = false;
 //final wave buffer
 int fw_wr, fw_rd;
 unsigned int final_wave[2][735+1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
-#define FW_VOL_MAX 200
-int fw_vol;
-#define FW_VOL_GAP 1
-int fw_div;
+#define FW_VOL_MAX 100
 //change volume
-unsigned char volume =100;
-unsigned char volume_increment = 20;
+ int volume =50;
+unsigned int volume_increment = 10;
 #include "font_8x8.h"
 
 #ifdef LED_ENABLED
@@ -214,19 +211,22 @@ void saveNVRAM(uint8_t statevar, char advance)
     }
 
     if (auto addr = getCurrentNVRAMAddr())
-    {
+    { 
         printf("save SRAM\n");
         printf("  resetting Core 1\n");
         multicore_reset_core1();
         auto ofs = addr - XIP_BASE;
+      
         printf("  write flash %x --> %x\n", addr, ofs);
         _saveNVRAM(ofs, statevar, advance);
+
         printf("  done\n");
         printf("  Rebooting...\n");
+
+       
         // Reboot after SRAM is flashed
         watchdog_enable(100, 1);
-        while (1)
-            ;
+        while (1);
     }
     SRAMwritten = false;
     // reboot
@@ -267,10 +267,7 @@ static int rapidFireCounter = 0;
 static bool jumptomenu = false;
 
 
-void set_fw_vol(unsigned int i) {
-    fw_vol = (i > FW_VOL_MAX) ? FW_VOL_MAX : i;
-    fw_div = (FW_VOL_MAX - i) * FW_VOL_GAP + 1;
-}
+
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
 
@@ -340,14 +337,14 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
         }
         if (pushed & GPA)
         {
-            volume = (volume + volume_increment > FW_VOL_MAX) ? volume = FW_VOL_MAX : volume = volume + volume_increment;
-            set_fw_vol(volume);
+            volume = (volume + volume_increment >= FW_VOL_MAX) ?  FW_VOL_MAX :volume + volume_increment;
+            //set_fw_vol(volume);
             // rapidFireMask[i] ^= io::GamePadState::Button::A;
         }
         if (pushed & GPB)
         {
-            volume = (volume - volume_increment < 0) ? volume = 0 : volume = volume - volume_increment;
-            set_fw_vol(volume);
+            volume = (volume - volume_increment < 1) ? 0 : volume - volume_increment;
+            //set_fw_vol(volume);
             // rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
     }
@@ -714,8 +711,13 @@ void fw_callback() {
 		for(i = 0; final_wave[fw_rd][i] != -1; i++){
 			et = to_us_since_boot(get_absolute_time());
 			nt = et + SAMPLE_INTERVAL; // defined at infoNES_pAPU.h
-           
-			picosystem::psg_vol(final_wave[fw_rd][i] *fw_vol / fw_div);
+           //ratio formula a/b : c/d c = a * d / b
+            // a = finalwave b = 255 d = 2000*volume (20k audible range)
+            if (volume > 0) {
+                picosystem::psg_vol(final_wave[fw_rd][i] * (2000 * volume) / 255);
+            }
+            else
+                picosystem::psg_vol(0);
 			while(et < nt){
 				et = to_us_since_boot(get_absolute_time());
 				sleep_us(1);
@@ -732,7 +734,7 @@ int main()
     strcpy(errorMessage, "");
     _init_hardware();
 //    _start_audio();
-    set_fw_vol(50);
+    //set_fw_vol(50);
 //    set_fw_vol(0); // for mute
 
     fw_wr = fw_rd = 0;
