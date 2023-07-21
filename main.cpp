@@ -216,11 +216,13 @@ void saveNVRAM(uint8_t statevar, char advance)
     if (auto addr = getCurrentNVRAMAddr())
     {
         printf("save SRAM\n");
+        printf("  resetting Core 1\n");
+        multicore_reset_core1();
         auto ofs = addr - XIP_BASE;
-        printf("write flash %x --> %x\n", addr, ofs);
+        printf("  write flash %x --> %x\n", addr, ofs);
         _saveNVRAM(ofs, statevar, advance);
-        printf("done\n");
-        printf("Rebooting...\n");
+        printf("  done\n");
+        printf("  Rebooting...\n");
         // Reboot after SRAM is flashed
         watchdog_enable(100, 1);
         while (1)
