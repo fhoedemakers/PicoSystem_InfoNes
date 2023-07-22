@@ -34,13 +34,16 @@
 
 bool fps_enabled = false;
 
-//final wave buffer
+// final wave buffer
 int fw_wr, fw_rd;
-unsigned int final_wave[2][735+1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
+unsigned int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
 #define FW_VOL_MAX 100
-//change volume
- int volume =50;
+// change volume
+int volume = 50;
 unsigned int volume_increment = 10;
+#define VOLUMEFRAMES 120 // number of frames the volume is shown
+int showVolume = 0;      // When > 0 volume is shown on screen
+char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or decreased
 #include "font_8x8.h"
 
 #ifdef LED_ENABLED
@@ -211,22 +214,22 @@ void saveNVRAM(uint8_t statevar, char advance)
     }
 
     if (auto addr = getCurrentNVRAMAddr())
-    { 
+    {
         printf("save SRAM\n");
         printf("  resetting Core 1\n");
         multicore_reset_core1();
         auto ofs = addr - XIP_BASE;
-      
+
         printf("  write flash %x --> %x\n", addr, ofs);
         _saveNVRAM(ofs, statevar, advance);
 
         printf("  done\n");
         printf("  Rebooting...\n");
 
-       
         // Reboot after SRAM is flashed
         watchdog_enable(100, 1);
-        while (1);
+        while (1)
+            ;
     }
     SRAMwritten = false;
     // reboot
@@ -266,8 +269,6 @@ static int rapidFireMask = 0;
 static int rapidFireCounter = 0;
 static bool jumptomenu = false;
 
-
-
 void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
 
@@ -303,8 +304,10 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     {
         printf("%d\n", fps);
     }
-    if ( p1 & GPX ) {
-        if (pushed & GPA) {
+    if (p1 & GPX)
+    {
+        if (pushed & GPA)
+        {
             fps_enabled = !fps_enabled;
             printf("Show fps: %d\n", fps_enabled);
         }
@@ -337,15 +340,20 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
         }
         if (pushed & GPA)
         {
-            volume = (volume + volume_increment >= FW_VOL_MAX) ?  FW_VOL_MAX :volume + volume_increment;
-            //set_fw_vol(volume);
-            // rapidFireMask[i] ^= io::GamePadState::Button::A;
+            volume = (volume + volume_increment >= FW_VOL_MAX) ? FW_VOL_MAX : volume + volume_increment;
+            showVolume = VOLUMEFRAMES;
+            volumeOperator = '+';
+            // set_fw_vol(volume);
+            //  rapidFireMask[i] ^= io::GamePadState::Button::A;
         }
         if (pushed & GPB)
         {
-            volume = (volume - volume_increment < 1) ? 0 : volume - volume_increment;
-            //set_fw_vol(volume);
-            // rapidFireMask[i] ^= io::GamePadState::Button::B;
+            volume = volume - volume_increment;
+            if ( volume < 0 ) volume = 0;
+            showVolume = VOLUMEFRAMES;
+            volumeOperator = '-'; 
+            // set_fw_vol(volume);
+            //  rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
     }
 
@@ -432,12 +440,12 @@ int __not_in_flash_func(InfoNES_GetSoundBufferSize)()
 
 void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYTE *wave4, BYTE *wave5)
 {
-	int i;
-	
-    for (i = 0; i < samples; i++){
+    int i;
+
+    for (i = 0; i < samples; i++)
+    {
         final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i]
-                + (unsigned char)wave4[i] + (unsigned char)wave5[i])/5;
+            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) / 5;
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -459,6 +467,10 @@ int InfoNES_LoadFrame()
     // calculate fps and round to nearest value (instead of truncating/floor)
     fps = (1000000 - 1) / tick_us + 1;
     start_tick_us = picosystem::time_us();
+    if ( showVolume > 0)
+    {
+        showVolume--;
+    }
     return count;
 }
 
@@ -514,6 +526,22 @@ void __not_in_flash_func(RomSelect_PreDrawLine)(int line)
     currentLineBuffer_ = lb;
 }
 
+void __not_in_flash_func(DisplayChar)(WORD *buffer, int y, char c, WORD fgColor, WORD bgColor)
+{
+    char fontSlice = font_8x8[(c - 32) + (y)*95];
+    for (auto bit = 0; bit < 8; bit++)
+    {
+        if (fontSlice & 1)
+        {
+            *buffer++ = fgColor;
+        }
+        else
+        {
+            *buffer++ = bgColor;
+        }
+        fontSlice >>= 1;
+    }
+}
 void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
 {
 #if !defined(NDEBUG)
@@ -521,39 +549,59 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     drawWorkMeter(line);
 #endif
 
+    char charBuffer[4];
+    WORD *fpsBuffer = nullptr;
+    WORD fgc = NesPalette[48];
+    WORD bgc = NesPalette[15];
 
-   
     if (fps_enabled && line >= 8 && line < 16)
     {
-        char fpsString[2];
-        WORD *fpsBuffer = lb + 8;
-        WORD fgc = NesPalette[48];
-        WORD bgc = NesPalette[15];
-        fpsString[0] = '0' + (fps / 10);
-        fpsString[1] = '0' + (fps % 10);
-        
+
+        fpsBuffer = lb + 8;
+
+        charBuffer[0] = '0' + (fps / 10);
+        charBuffer[1] = '0' + (fps % 10);
+
         int rowInChar = line % 8;
         for (auto i = 0; i < 2; i++)
         {
-            char firstFpsDigit = fpsString[i];
-           
-            char fontSlice = font_8x8[(firstFpsDigit - 32) + (rowInChar)*95];
-            for (auto bit = 0; bit < 8; bit++)
-            {
-                if (fontSlice & 1)
-                {
-                    *fpsBuffer++ = fgc;
-                }
-                else
-                {
-                     *fpsBuffer++ = bgc;
-                }
-                fontSlice >>= 1;
-                // WorkLineRom++;
-            }
+            char firstFpsDigit = charBuffer[i];
+            DisplayChar(fpsBuffer, rowInChar, firstFpsDigit, fgc, bgc);
+            fpsBuffer += 8;
+            // char fontSlice = font_8x8[(firstFpsDigit - 32) + (rowInChar)*95];
+            // for (auto bit = 0; bit < 8; bit++)
+            // {
+            //     if (fontSlice & 1)
+            //     {
+            //         *fpsBuffer++ = fgc;
+            //     }
+            //     else
+            //     {
+            //          *fpsBuffer++ = bgc;
+            //     }
+            //     fontSlice >>= 1;
+            //     // WorkLineRom++;
+            // }
         }
     }
+    if (showVolume > 0 && line >= 120 && line < 128)
+    {
+        fpsBuffer = lb + 120;
+        // fill charbuffer with 3 digits from volume
+        charBuffer[0] = volumeOperator;
+        charBuffer[1] = '0' + (volume / 100);
+        charBuffer[2] = '0' + ((volume % 100) / 10);
+        charBuffer[3] = '0' + (volume % 10);
+       
 
+        int rowInChar = line % 8;
+        for (auto i = 0; i < 4; i++)
+        {
+            char firstFpsDigit = charBuffer[i];
+            DisplayChar(fpsBuffer, rowInChar, firstFpsDigit, fgc, bgc);
+            fpsBuffer += 8;
+        }
+    }
 
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
@@ -701,41 +749,46 @@ bool initSDCard()
 }
 using namespace picosystem;
 
-void fw_callback() {
-	uint64_t et, nt;
-	int i;
-	while(1){
-	    while(fw_wr == fw_rd){
-			sleep_us(1);
-		}
-		for(i = 0; final_wave[fw_rd][i] != -1; i++){
-			et = to_us_since_boot(get_absolute_time());
-			nt = et + SAMPLE_INTERVAL; // defined at infoNES_pAPU.h
-           //ratio formula a/b : c/d c = a * d / b
-            // a = finalwave b = 255 d = 2000*volume (20k audible range)
-            if (volume > 0) {
+void fw_callback()
+{
+    uint64_t et, nt;
+    int i;
+    while (1)
+    {
+        while (fw_wr == fw_rd)
+        {
+            sleep_us(1);
+        }
+        for (i = 0; final_wave[fw_rd][i] != -1; i++)
+        {
+            et = to_us_since_boot(get_absolute_time());
+            nt = et + SAMPLE_INTERVAL; // defined at infoNES_pAPU.h
+                                       // ratio formula a/b : c/d c = a * d / b
+            //  a = finalwave b = 255 d = 2000*volume (20k audible range)
+            if (volume > 0)
+            {
                 picosystem::psg_vol(final_wave[fw_rd][i] * (2000 * volume) / 255);
             }
             else
                 picosystem::psg_vol(0);
-			while(et < nt){
-				et = to_us_since_boot(get_absolute_time());
-				sleep_us(1);
-			}
-		}
-		fw_rd = fw_wr;
-	}
+            while (et < nt)
+            {
+                et = to_us_since_boot(get_absolute_time());
+                sleep_us(1);
+            }
+        }
+        fw_rd = fw_wr;
+    }
 }
-
 
 int main()
 {
     char errorMessage[30];
     strcpy(errorMessage, "");
     _init_hardware();
-//    _start_audio();
-    //set_fw_vol(50);
-//    set_fw_vol(0); // for mute
+    //    _start_audio();
+    // set_fw_vol(50);
+    //    set_fw_vol(0); // for mute
 
     fw_wr = fw_rd = 0;
     multicore_launch_core1(fw_callback);
