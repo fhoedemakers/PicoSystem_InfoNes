@@ -37,7 +37,15 @@ namespace Frens
 	{
 		return numberOfEntries;
 	}
-
+	// implementation of the compare function for qsort ignore case
+	int compareRomEntry(const void *a, const void *b)
+	{
+		const RomLister::RomEntry *entryA = (const RomLister::RomEntry *)a;
+		const RomLister::RomEntry *entryB = (const RomLister::RomEntry *)b;
+		return strcasecmp(entryA->Path, entryB->Path);
+	}
+	
+	
 	void RomLister::list( )
 	{
 		numberOfEntries = GetValidTAREntries(address, checkNESMagic);
@@ -46,6 +54,9 @@ namespace Frens
 			entries[i].IsDirectory = false;
 			strcpy(entries[i].Path, extractTAREntryatindex(i, address, checkNESMagic).filename.data());
 		}
+		// sort the entries by Path
+		qsort(entries, numberOfEntries, sizeof(RomEntry), compareRomEntry);
 		
 	}
+	
 }

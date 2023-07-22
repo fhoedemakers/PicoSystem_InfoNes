@@ -393,7 +393,7 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
             showSplashScreen();
         }
     }
-
+    Frens::RomLister::RomEntry *entries;
     displayRoms(romlister, firstVisibleRowINDEX);
     int index = -1;
     while (1)
@@ -401,7 +401,7 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
 
         auto frameCount = InfoNES_LoadFrame();
         index = selectedRow - STARTROW + firstVisibleRowINDEX;
-        auto entries = romlister.GetEntries();
+        entries = romlister.GetEntries();
         selectedRomOrFolder = (romlister.Count() > 0) ? entries[index].Path : nullptr;
         errorInSavingRom = false;
         DrawScreen(selectedRow);
@@ -525,6 +525,9 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
         {
             break;
         }
+    }
+    if ( index != -1) {
+        index = entries[index].Index;
     }
     return index;
 }
