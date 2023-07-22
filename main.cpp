@@ -765,9 +765,16 @@ void fw_callback()
             nt = et + SAMPLE_INTERVAL; // defined at infoNES_pAPU.h
                                        // ratio formula a/b : c/d c = a * d / b
             //  a = finalwave b = 255 d = 2000*volume (20k audible range)
+            /* 
+            void set_fw_vol(unsigned int i){
+                fw_vol = (i > FW_VOL_MAX) ? FW_VOL_MAX: i;
+                fw_div = (FW_VOL_MAX - i) * FW_VOL_GAP + 1;
+            }
+             */
             if (volume > 0)
             {
-                picosystem::psg_vol(final_wave[fw_rd][i] * (2000 * volume) / 255);
+                int scaler =600;
+                picosystem::psg_vol((scaler * final_wave[fw_rd][i]* volume)  / (255 + scaler / volume));
             }
             else
                 picosystem::psg_vol(0);
