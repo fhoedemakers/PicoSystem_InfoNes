@@ -69,6 +69,9 @@ picotool load games.tar -t bin -o 0x10110000
 - Y + LEFT: Previous game
 - Y + RIGHT: Next Game
 - Y + UP: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
+- X + A: Toggle framerate
+- Y + A: Volume up
+- Y + B: Volume down
 
 ### In-Menu
 - Up/DOWN: Scroll through list
