@@ -3,6 +3,7 @@
 #include "hardware/gpio.h"
 #include "hardware/divider.h"
 #include "hardware/dma.h"
+#include "hardware/pwm.h"
 #include "hardware/pio.h"
 #include "hardware/i2c.h"
 #include "hardware/interp.h"
@@ -37,14 +38,21 @@ bool fps_enabled = false;
 // final wave buffer
 int fw_wr, fw_rd;
 unsigned int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
-#define FW_VOL_MAX 100
+
 // change volume
+#define FW_VOL_MAX 100
 int volume = 50;
 unsigned int volume_increment = 10;
 #define VOLUMEFRAMES 120 // number of frames the volume is shown
 int showVolume = 0;      // When > 0 volume is shown on screen
 char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or decreased
 #include "font_8x8.h"
+
+//speaker 
+#ifdef SPEAKER_ENABLED
+int mode = 0; //0= piezo only 1= speaker only 2= both 3= mute all
+char modeOperator = 'P';
+#endif 
 
 #ifdef LED_ENABLED
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
@@ -332,6 +340,14 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
             romSelector_.selectcustomrom();
             reset = true;
         }
+        if (pushed & GPDOWN)
+        {
+#ifdef SPEAKER_ENABLED
+
+            mode = mode + 1 % 4;
+          
+#endif
+        }
         if (pushed & GPX)
         {
             saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
@@ -446,6 +462,7 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
     {
         final_wave[fw_wr][i] =
             ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) / 5;
+      
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -762,19 +779,35 @@ void fw_callback()
         for (i = 0; final_wave[fw_rd][i] != -1; i++)
         {
             et = to_us_since_boot(get_absolute_time());
-            nt = et + SAMPLE_INTERVAL; // defined at infoNES_pAPU.h
-                                       // ratio formula a/b : c/d c = a * d / b
-            //  a = finalwave b = 255 d = 2000*volume (20k audible range)
-            /* 
-            void set_fw_vol(unsigned int i){
-                fw_vol = (i > FW_VOL_MAX) ? FW_VOL_MAX: i;
-                fw_div = (FW_VOL_MAX - i) * FW_VOL_GAP + 1;
-            }
-             */
+            nt = et + SAMPLE_INTERVAL; 
+
             if (volume > 0)
             {
                 int scaler =600;
+
+#ifdef SPEAKER_ENABLED
+
+                uint16_t freq = (scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / volume);
+                switch (mode)
+                {
+                case 0: //piezo only
+                    pwm_set_gpio_level(11, freq);
+                    break;
+                case 1: //speaker only
+                    pwm_set_gpio_level(1, freq);
+                    break;
+                case 2: //both only
+                    pwm_set_gpio_level(11, freq);
+                    pwm_set_gpio_level(1, freq);
+                    break;
+                case 3: //mute all
+                    pwm_set_gpio_level(11, 0);
+                    pwm_set_gpio_level(1, 0);
+                    break;
+                }
+#else
                 picosystem::psg_vol((scaler * final_wave[fw_rd][i]* volume)  / (255 + scaler / volume));
+#endif
             }
             else
                 picosystem::psg_vol(0);
