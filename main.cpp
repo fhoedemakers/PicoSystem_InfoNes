@@ -43,16 +43,21 @@ unsigned int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples p
 #define FW_VOL_MAX 100
 int volume = 50;
 unsigned int volume_increment = 10;
-#define VOLUMEFRAMES 120 // number of frames the volume is shown
-int showVolume = 0;      // When > 0 volume is shown on screen
+#define VOLUMEFRAMES 120   // number of frames the volume is shown
+int showVolume = 0;        // When > 0 volume is shown on screen
 char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or decreased
 #include "font_8x8.h"
 
-//speaker 
+// speaker
 #ifdef SPEAKER_ENABLED
-int mode = 0; //0= piezo only 1= speaker only 2= both 3= mute all
+int mode = 0; // 0= piezo only 1= speaker only 2= both 3= mute all
 char modeOperator = 'P';
-#endif 
+
+// initialiize an arry of four strings
+const char *modeStrings[] = {"Piezo only", "Speaker only", "Both", "Mute all"};
+int showSpeakerMode = 0;      // When > 0 speaker mode is shown on screen
+#define SPEAKERMODEFRAMES 120 // number of frames the speaker mode is shown
+#endif
 
 #ifdef LED_ENABLED
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
@@ -345,7 +350,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 #ifdef SPEAKER_ENABLED
 
             mode = (mode + 1) % 4;
-          
+            showSpeakerMode = SPEAKERMODEFRAMES;
 #endif
         }
         if (pushed & GPX)
@@ -365,9 +370,10 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
         if (pushed & GPB)
         {
             volume = volume - volume_increment;
-            if ( volume < 0 ) volume = 0;
+            if (volume < 0)
+                volume = 0;
             showVolume = VOLUMEFRAMES;
-            volumeOperator = '-'; 
+            volumeOperator = '-';
             // set_fw_vol(volume);
             //  rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
@@ -462,7 +468,6 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
     {
         final_wave[fw_wr][i] =
             ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) / 5;
-      
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -484,10 +489,16 @@ int InfoNES_LoadFrame()
     // calculate fps and round to nearest value (instead of truncating/floor)
     fps = (1000000 - 1) / tick_us + 1;
     start_tick_us = picosystem::time_us();
-    if ( showVolume > 0)
+    if (showVolume > 0)
     {
         showVolume--;
     }
+#ifdef SPEAKER_ENABLED
+    if (showSpeakerMode > 0)
+    {
+        showSpeakerMode--;
+    }
+#endif
     return count;
 }
 
@@ -566,7 +577,7 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     drawWorkMeter(line);
 #endif
 
-    char charBuffer[4];
+    char charBuffer[5];
     WORD *fpsBuffer = nullptr;
     WORD fgc = NesPalette[48];
     WORD bgc = NesPalette[15];
@@ -578,27 +589,13 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
 
         charBuffer[0] = '0' + (fps / 10);
         charBuffer[1] = '0' + (fps % 10);
-
+        charBuffer[2] = 0;
         int rowInChar = line % 8;
-        for (auto i = 0; i < 2; i++)
+        for (auto i = 0; i < strlen(charBuffer); i++)
         {
-            char firstFpsDigit = charBuffer[i];
-            DisplayChar(fpsBuffer, rowInChar, firstFpsDigit, fgc, bgc);
+            char aChar = charBuffer[i];
+            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
             fpsBuffer += 8;
-            // char fontSlice = font_8x8[(firstFpsDigit - 32) + (rowInChar)*95];
-            // for (auto bit = 0; bit < 8; bit++)
-            // {
-            //     if (fontSlice & 1)
-            //     {
-            //         *fpsBuffer++ = fgc;
-            //     }
-            //     else
-            //     {
-            //          *fpsBuffer++ = bgc;
-            //     }
-            //     fontSlice >>= 1;
-            //     // WorkLineRom++;
-            // }
         }
     }
     if (showVolume > 0 && line >= 120 && line < 128)
@@ -609,17 +606,30 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         charBuffer[1] = '0' + (volume / 100);
         charBuffer[2] = '0' + ((volume % 100) / 10);
         charBuffer[3] = '0' + (volume % 10);
-       
+        charBuffer[4] = 0;
 
         int rowInChar = line % 8;
-        for (auto i = 0; i < 4; i++)
+        for (auto i = 0; i < strlen(charBuffer); i++)
         {
-            char firstFpsDigit = charBuffer[i];
-            DisplayChar(fpsBuffer, rowInChar, firstFpsDigit, fgc, bgc);
+            char aChar = charBuffer[i];
+            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
             fpsBuffer += 8;
         }
     }
-
+#ifdef SPEAKER_ENABLED
+    if (showSpeakerMode > 0 && line >= 120 && line < 128)
+    {
+        int l = (strlen(modeStrings[mode]) * 8) / 2;
+        fpsBuffer = lb + 120 - l;
+        int rowInChar = line % 8;
+        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
+        {
+            char aChar = modeStrings[mode][i];
+            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
+            fpsBuffer += 8;
+        }
+    }
+#endif
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
 
@@ -687,83 +697,6 @@ int InfoNES_Menu()
     // return 0;
 }
 
-void __not_in_flash_func(core1_main)()
-{
-
-    while (true)
-    {
-        // dvi_->registerIRQThisCore();
-        // dvi_->waitForValidLine();
-
-        // dvi_->start();
-        // while (!exclProc_.isExist())
-        // {
-
-        // queue_entry_t qentry;
-        // queue_remove_blocking(&call_queue, &qentry);
-        // FH if (qentry.startframe ) {
-        // FH fstartframe();
-        // FH }
-        // FH fwritescanline(sizeof(scanlinebuffer0),(char *)scanlinesbuffers[qentry.bufferindex]);
-
-        // printf("Core 1 index: %d startframe: %d endframe: %d\n", qentry.bufferindex, qentry.startframe, qentry.endframe);
-        // FH if (qentry.endframe ) {
-        // FH  fendframe();
-        // FH }
-    }
-}
-
-bool initSDCard()
-{
-    // FRESULT fr;
-    // TCHAR str[40];
-    // sleep_ms(1000);
-
-    // printf("Mounting SDcard");
-    // fr = f_mount(&fs, "", 1);
-    // if (fr != FR_OK)
-    // {
-    //    snprintf(ErrorMessage, ERRORMESSAGESIZE, "SD card mount error: %d", fr);
-    //     printf("%s\n", ErrorMessage);
-    //     return false;
-    // }
-    // printf("\n");
-
-    // fr = f_chdir("/");
-    // if (fr != FR_OK)
-    // {
-    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot change dir to / : %d", fr);
-    //     printf("%s\n", ErrorMessage);
-    //     return false;
-    // }
-    // // for f_getcwd to work, set
-    // //   #define FF_FS_RPATH		2
-    // // in drivers/fatfs/ffconf.h
-    // fr = f_getcwd(str, sizeof(str));
-    // if (fr != FR_OK)
-    // {
-    //     snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot get current dir: %d", fr);
-    //     printf("%s\n", ErrorMessage);
-    //     return false;
-    // }
-    // printf("Current directory: %s\n", str);
-    // printf("Creating directory %s\n", GAMESAVEDIR);
-    // fr = f_mkdir(GAMESAVEDIR);
-    // if (fr != FR_OK)
-    // {
-    //     if (fr == FR_EXIST)
-    //     {
-    //         printf("Directory already exists.\n");
-    //     }
-    //     else
-    //     {
-    //         snprintf(ErrorMessage, ERRORMESSAGESIZE, "Cannot create dir %s: %d", GAMESAVEDIR, fr);
-    //         printf("%s\n", ErrorMessage);
-    //         return false;
-    //     }
-    // }
-    return true;
-}
 using namespace picosystem;
 
 void fw_callback()
@@ -779,34 +712,34 @@ void fw_callback()
         for (i = 0; final_wave[fw_rd][i] != -1; i++)
         {
             et = to_us_since_boot(get_absolute_time());
-            nt = et + SAMPLE_INTERVAL; 
+            nt = et + SAMPLE_INTERVAL;
 
             if (volume > 0)
             {
-                int scaler =600;
+                int scaler = 600;
 
 #ifdef SPEAKER_ENABLED
 
                 uint16_t freq = (scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / volume);
                 switch (mode)
                 {
-                case 0: //piezo only
+                case 0: // piezo only
                     pwm_set_gpio_level(11, freq);
                     break;
-                case 1: //speaker only
+                case 1: // speaker only
                     pwm_set_gpio_level(1, freq);
                     break;
-                case 2: //both only
+                case 2: // both only
                     pwm_set_gpio_level(11, freq);
                     pwm_set_gpio_level(1, freq);
                     break;
-                case 3: //mute all
+                case 3: // mute all
                     pwm_set_gpio_level(11, 0);
                     pwm_set_gpio_level(1, 0);
                     break;
                 }
 #else
-                picosystem::psg_vol((scaler * final_wave[fw_rd][i]* volume)  / (255 + scaler / volume));
+                picosystem::psg_vol((scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / volume));
 #endif
             }
             else
