@@ -344,7 +344,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
         {
 #ifdef SPEAKER_ENABLED
 
-            mode = mode + 1 % 4;
+            mode = (mode + 1) % 4;
           
 #endif
         }
