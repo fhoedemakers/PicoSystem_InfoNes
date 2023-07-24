@@ -16,7 +16,8 @@ Attention! Base address for uploading rom with picotool has changed again. You h
 
 See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/README.md) for more info.
 
-## 0.7-alpha (2021-09-19)
+## Release History
+### 0.7-alpha (2023-07-24)
 
 Fixes:
 
@@ -26,7 +27,7 @@ Features:
 
 - Test CI/CD with Github Actions
 
-## 0.6-alpha (2023-07-24)
+### 0.6-alpha (2023-07-23)
 
 Fixes:
 
