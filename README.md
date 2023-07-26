@@ -1,13 +1,14 @@
 # PicoSystem_InfoNes a NES emulator for the Pimoroni PicoSystem RP2040 gaming handheld
-``
-!!!This is an experimentarl branch to support PWM audio from [Fhoedemakers github.](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases)
-``
 
-Emulater is now bundled with the freeware homebrew game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html).
+## What is it
 
-[A pre-release .uf2 binary to flash on your picosystem can be found here.](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases)
+A Nintendo NES emulator for the Pimoroni PiocSystem RP2040 gaming handheld.
 
-Now you can store and play Nintendo multiple NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld. A menu system is included for choosing your games to play.
+Emulater is bundled with the freeware homebrew game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html).
+
+Look for the latest version in the [releases section](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases)
+
+Store and play multiple Nintendo NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld. A menu system is included for choosing your games to play.
 
 (Note: Screenshots below do not represent the actual picture quality. The distortion is caused by the camera)
 ![image](assets/gamescreen.jpeg)
@@ -18,7 +19,19 @@ Click on image below to see a demo video.
 
 [![Video](https://img.youtube.com/vi/4VYKSMvYWc8/0.jpg)](https://www.youtube.com/watch?v=4VYKSMvYWc8)
 
- Things to do:
+## sound through internal speaker
+Sound through the internal piezo speaker is working but limited due to the limitations of this speaker. 
+
+## speaker mod for better sound
+The sound quality will be better (but not perfect and still somewhat limited) by adding a speaker mod to the system.
+Those can be found [here for US](https://www.amazon.com/gp/product/B082658QXL/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) and [here for Europe](https://www.amazon.nl/gp/product/B0BTYDS6FY/ref=ppx_od_dt_b_asin_title_s00?ie=UTF8&psc=1)
+
+```
+This requires soldering
+```
+
+
+## Things to do
 
 - Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
 
