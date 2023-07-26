@@ -271,18 +271,17 @@ void showSplashScreen()
     strcpy(s, "@frenskefrens");
     putText(SCREEN_COLS / 2 - strlen(s) / 2, 14, s, CLIGHTBLUE, bgcolor);
 
-    // strcpy(s, "(S)NES controller support");
-    // putText(SCREEN_COLS / 2 - strlen(s) / 2, 17, s, fgcolor, bgcolor);
+    strcpy(s, "Sound programming");
+    putText(SCREEN_COLS / 2 - strlen(s) / 2, 17, s, fgcolor, bgcolor);
 
-    // strcpy(s, "@PaintYourDragon @adafruit");
-    // putText(SCREEN_COLS / 2 - strlen(s) / 2, 18, s, CLIGHTBLUE, bgcolor);
+    strcpy(s, "Sonny J Gray (newschooldev)");
+    putText(SCREEN_COLS / 2 - strlen(s) / 2, 18, s, CLIGHTBLUE, bgcolor);
+    strcpy(s, "and");
+    putText(SCREEN_COLS / 2 - strlen(s) / 2, 19, s, fgcolor, bgcolor);
 
-    // strcpy(s, "PCB Design");
-    // putText(SCREEN_COLS / 2 - strlen(s) / 2, 21, s, fgcolor, bgcolor);
-
-    // strcpy(s, "@johnedgarpark");
-    // putText(SCREEN_COLS / 2 - strlen(s) / 2, 22, s, CLIGHTBLUE, bgcolor);
-
+    strcpy(s, "@Layer812");
+    putText(SCREEN_COLS / 2 - strlen(s) / 2, 20, s, CLIGHTBLUE, bgcolor);
+   
     strcpy(s, "https://github.com/");
     putText(SCREEN_COLS / 2 - strlen(s) / 2, 25, s, CLIGHTBLUE, bgcolor);
     strcpy(s, "fhoedemakers/");
@@ -393,7 +392,7 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
             showSplashScreen();
         }
     }
-
+    Frens::RomLister::RomEntry *entries;
     displayRoms(romlister, firstVisibleRowINDEX);
     int index = -1;
     while (1)
@@ -401,7 +400,7 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
 
         auto frameCount = InfoNES_LoadFrame();
         index = selectedRow - STARTROW + firstVisibleRowINDEX;
-        auto entries = romlister.GetEntries();
+        entries = romlister.GetEntries();
         selectedRomOrFolder = (romlister.Count() > 0) ? entries[index].Path : nullptr;
         errorInSavingRom = false;
         DrawScreen(selectedRow);
@@ -525,6 +524,9 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
         {
             break;
         }
+    }
+    if ( index != -1) {
+        index = entries[index].Index;
     }
     return index;
 }

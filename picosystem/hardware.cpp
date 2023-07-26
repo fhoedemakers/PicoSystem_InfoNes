@@ -14,6 +14,7 @@
 #include "pico/time.h"
 
 
+
 #ifdef PIXEL_DOUBLE
   #include "screen_double.pio.h"
 #else
@@ -35,7 +36,7 @@ namespace picosystem {
     RED = 14, GREEN = 13, BLUE = 15,                  // user rgb led
     CS = 5, SCK = 6, MOSI  = 7,                       // spi
     VSYNC = 8, DC = 9, LCD_RESET = 4, BACKLIGHT = 12, // screen
-    AUDIO = 11,                                       // audio
+    AUDIO = 11, RX = 1,                                      // audio //speaker out
     CHARGE_LED = 2, CHARGING = 24, BATTERY_LEVEL = 26 // battery / charging
   };
 
@@ -428,11 +429,20 @@ namespace picosystem {
 
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
     pwm_set_gpio_level(AUDIO, 0);
-
-	// limit sound frequency below 10khz to protect piezo.
+// limit sound frequency below 10khz to protect piezo.
 	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
 	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
     pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
+    // init extra speaker.
+#ifdef SPEAKER_ENABLED
+    int audio_pwm_slice_numberS = pwm_gpio_to_slice_num(RX);
+    //pwm_config audio_pwm_cfg = pwm_get_default_config();
+
+    gpio_set_function(RX, GPIO_FUNC_PWM);
+    pwm_set_gpio_level(RX, 0);
+    pwm_init(audio_pwm_slice_numberS, &audio_pwm_cfg, true);//sharing config for now
+#endif
+	
     pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
   }
 

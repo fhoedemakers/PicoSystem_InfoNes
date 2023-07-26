@@ -6,8 +6,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 
-add_definitions( -DNDEBUG )
-
+add_definitions( -DNDEBUG -DSPEAKER_ENABLED)
 include(pico_sdk_import.cmake)
 
 project(PicoSystem_InfoNes C CXX ASM)
@@ -23,9 +22,9 @@ add_executable(PicoSystem_InfoNes
 )
 
 pico_set_program_name(PicoSystem_InfoNes "PicoSystem_InfoNes")
-pico_set_program_version(PicoSystem_InfoNes "v0.6-alpha")
+pico_set_program_version(PicoSystem_InfoNes "v0.7-alpha")
 
-pico_enable_stdio_uart(PicoSystem_InfoNes 1)
+pico_enable_stdio_uart(PicoSystem_InfoNes 0)
 pico_enable_stdio_usb(PicoSystem_InfoNes 0)
 
 include(${CMAKE_CURRENT_LIST_DIR}/picosystem/picosystem.cmake REQUIRED)
