@@ -431,7 +431,8 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
     for (i = 0; i < samples; i++){
      	final_wave[fw_wr][i] = 
     	 ( (unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] 
-		 + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * fw_vol / fw_div;
+		// + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * fw_vol / fw_div;
+		 + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * 1024 / 1280;
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;

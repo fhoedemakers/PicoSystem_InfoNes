@@ -11,7 +11,7 @@
 #include "pico/stdlib.h"
 
 // limit sound frequency below 10khz to protect piezo.
-#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.cpp
+#define PWM_RANGE_BITS (10) // dirty hack , also defined in hardware.cpp
 
 namespace picosystem {
 

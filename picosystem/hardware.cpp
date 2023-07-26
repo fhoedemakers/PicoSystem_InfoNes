@@ -35,7 +35,7 @@ namespace picosystem {
     RED = 14, GREEN = 13, BLUE = 15,                  // user rgb led
     CS = 5, SCK = 6, MOSI  = 7,                       // spi
     VSYNC = 8, DC = 9, LCD_RESET = 4, BACKLIGHT = 12, // screen
-    AUDIO = 11,                                       // audio
+    AUDIO = 1,                                       // audio
     CHARGE_LED = 2, CHARGING = 24, BATTERY_LEVEL = 26 // battery / charging
   };
 
@@ -430,7 +430,7 @@ namespace picosystem {
     pwm_set_gpio_level(AUDIO, 0);
 
 	// limit sound frequency below 10khz to protect piezo.
-	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
+	#define PWM_RANGE_BITS (10) // dirty hack , also defined in hardware.hpp. 
 	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
     pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
     pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
