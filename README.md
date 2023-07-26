@@ -19,16 +19,16 @@ Click on image below to see a demo video.
 
 [![Video](https://img.youtube.com/vi/4VYKSMvYWc8/0.jpg)](https://www.youtube.com/watch?v=4VYKSMvYWc8)
 
-## sound through internal speaker
+## Sound through internal speaker
 Sound through the internal piezo speaker is working but limited due to the limitations of this speaker. 
 
-## speaker mod for better sound
+## Speaker mod for better sound
 The sound quality will be better (but not perfect and still somewhat limited) by adding a speaker mod to the system.
 Those can be found [here for US](https://www.amazon.com/gp/product/B082658QXL/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) and [here for Europe](https://www.amazon.nl/gp/product/B0BTYDS6FY/ref=ppx_od_dt_b_asin_title_s00?ie=UTF8&psc=1)
 
-```
-This requires opening up the PicoSystem and some soldering
-```
+
+> This requires opening up the PicoSystem and some soldering. I don't take responsibility when the PicoSystem gets damaged.
+
 The speaker must be soldered to the RX (red wire) and ground pin of the PicoSystem as shown below:
 
 ![image](assets/batterymod.png)
@@ -95,7 +95,6 @@ picotool load games.tar -t bin -o 0x10110000
 - Up/DOWN: Scroll through list
 - A : Start selected game
 - B : Exit menu
-
 
 
 ## Screen Resolution
