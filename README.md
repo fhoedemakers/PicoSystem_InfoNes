@@ -64,10 +64,25 @@ picotool load rom.nes -t bin -o 0x10110000
 - A : Start selected game
 - B : Exit menu
 
-
-
 ## Screen Resolution
 The original Nintendo Entertainment System has a resolution of 256x240 pixels. The PicoSystem has a resolution of 240x240 pixels. Therefore, on the PicoSystem the first and last 8 Pixels of each horizontal line are not visible.
+
+## Add Speaker
+### Requirement
+- 8ohm mini speaker
+- 1mm bolt
+### Procedure
+- Loose 4 screws from back cover of Picosystem.
+- Remove back cover.
+- Put red-wire from speaker to RX terminal.
+- Put black-wire form speaker to GND terminal.(terminalbelow SWD)
+- Screw them.
+- Put cover back.
+
+### Warning
+This may damage something, no warranty. Do it your own risk.
+
+![image](https://github.com/Layer812/PicoSystem_InfoNes_PwmSound/blob/add_speaker/IMG_4595.jpg)
 
 ## Credits
 InfoNes is programmed by [Jay Kumogata](https://github.com/jay-kumogata/InfoNES) and ported for DVI output to the Raspberry PI Pico by [Shuichi Takano](https://github.com/shuichitakano/pico-infones). I used the port of Shuichi Takano as a starting point for this project.
