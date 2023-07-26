@@ -1,7 +1,7 @@
 # Fetch ubuntu image
 FROM ubuntu:22.04
 
-# Install prerequisites
+# Install prerequisites -
 RUN \
     apt update && \
     apt install -y git python3 && \
