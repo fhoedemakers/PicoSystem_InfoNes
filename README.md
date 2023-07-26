@@ -40,10 +40,6 @@ Video to hear the difference between speakers:
 [![Video](https://img.youtube.com/vi/Y9FxzSAv4T4/0.jpg)](https://www.youtube.com/watch?v=Y9FxzSAv4T4)
 
 
-
-
-
-
 ## Uploading games and flashing the emulator
 Since there is no SD card slot available, a companion app for Microsoft Windows is created that lets the user choose games and flash them to the Pico.
 [More information here](https://github.com/fhoedemakers/PicoSystemInfoNesLoader). The app is included in the latest release. 
