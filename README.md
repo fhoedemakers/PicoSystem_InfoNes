@@ -27,9 +27,13 @@ The sound quality will be better (but not perfect and still somewhat limited) by
 Those can be found [here for US](https://www.amazon.com/gp/product/B082658QXL/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) and [here for Europe](https://www.amazon.nl/gp/product/B0BTYDS6FY/ref=ppx_od_dt_b_asin_title_s00?ie=UTF8&psc=1)
 
 ```
-This requires soldering
+This requires opening up the PicoSystem and some soldering
 ```
+The speaker must be soldered to the RX (red wire) and ground pin of the PicoSystem as shown below:
 
+![image](assets/batterymod.png)
+
+Switching from
 
 ## Things to do
 
