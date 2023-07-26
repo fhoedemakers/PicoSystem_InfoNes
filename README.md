@@ -33,11 +33,15 @@ The speaker must be soldered to the RX (red wire) and ground pin of the PicoSyst
 
 ![image](assets/batterymod.png)
 
-Switching from
+You can toggle between speakers in-game by the Y + Down button combo.
 
-## Things to do
+Video to hear the difference between speakers:
 
-- Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
+[![Video](https://img.youtube.com/vi/Y9FxzSAv4T4/0.jpg)](https://www.youtube.com/watch?v=Y9FxzSAv4T4)
+
+
+
+
 
 
 ## Uploading games and flashing the emulator
@@ -86,6 +90,7 @@ picotool load games.tar -t bin -o 0x10110000
 - Y + LEFT: Previous game
 - Y + RIGHT: Next Game
 - Y + UP: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
+- Y + Down: Toggle between speakers. (Built-In - Added via Mod - Both - Mute)
 - X + A: Toggle framerate
 - Y + A: Volume up
 - Y + B: Volume down
@@ -104,3 +109,7 @@ The original Nintendo Entertainment System has a resolution of 256x240 pixels. T
 InfoNes is programmed by [Jay Kumogata](https://github.com/jay-kumogata/InfoNES) and ported for DVI output to the Raspberry PI Pico by [Shuichi Takano](https://github.com/shuichitakano/pico-infones). I used the port of Shuichi Takano as a starting point for this project.
 
 Sound programmming by @newschooldev and @Layer812
+
+## Things to do
+
+- Code has to be cleaned up. Uses parts of the [PicoSystem library](https://github.com/pimoroni/picosystem).
