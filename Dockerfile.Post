@@ -1,0 +1,25 @@
+# Fetch ubuntu image
+FROM ubuntu:22.04
+
+ARG GH_APITOKEN
+# Install prerequisites to run a .NET 7 app in Linux
+RUN \
+    apt update && \
+    apt install -y libicu-dev ca-certificates
+    
+# Install Project Dir
+RUN \
+    mkdir -p /project && \
+    cd /project/
+    
+# Copy .NET 7 core helper utility to add asset to release
+COPY Linux-X64/AddAssetToRelease /project/
+
+# Build project. Asset wil be added to release by building this image
+# AddAssetToRelease utility adds PicoSystemInfoNesLoader.zip from https://github.com/fhoedemakers/PicoSystemInfoNesLoader/releases/latest 
+# to the release
+RUN \
+    chmod +x /project/AddAssetToRelease && \
+    /project/AddAssetToRelease --token=$GH_APITOKEN 
+# Command that will be invoked when the container starts
+ENTRYPOINT ["/bin/bash"]

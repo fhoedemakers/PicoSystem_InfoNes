@@ -5,6 +5,7 @@ on:
     push:
         tags:
           - "v*.*-alpha"
+          - "v*.*.*"
           
 # Must match the project() name in CMakeLists.txt
 env:
@@ -42,3 +43,7 @@ jobs:
             with:
                 files: ${{ env.app_name }}.uf2
                 body_path: CHANGELOG.md
+          
+          - name: Push additional asset PicoSystemInfonesLoader.zip to release
+            run: docker build -t pico-assetuploader-image -f Dockerfile.Post --build-arg GH_APITOKEN=${{ github.token }} . 
+    
