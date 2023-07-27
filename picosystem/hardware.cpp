@@ -423,24 +423,32 @@ namespace picosystem {
     irq_set_exclusive_handler(DMA_IRQ_0, dma_complete);
     irq_set_enabled(DMA_IRQ_0, true);
 
+// limit sound frequency below 10khz to protect piezo.
+	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
+	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
+	
     // initialise audio pwm pin
     int audio_pwm_slice_number = pwm_gpio_to_slice_num(AUDIO);
     pwm_config audio_pwm_cfg = pwm_get_default_config();
 
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
     pwm_set_gpio_level(AUDIO, 0);
-// limit sound frequency below 10khz to protect piezo.
-	#define PWM_RANGE_BITS (10) // dirty hack , also defined in hardware.hpp. 
-	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
+
     pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
     // init extra speaker.
 #ifdef SPEAKER_ENABLED
+// 122khz frequency support
+	#define PWM_RANGE_BITS_S (10) // dirty hack , also defined in hardware.hpp. 
+	#define PWM_RANGE_S      (1<<PWM_RANGE_BITS_S)
+
     int audio_pwm_slice_numberS = pwm_gpio_to_slice_num(RX);
-    //pwm_config audio_pwm_cfg = pwm_get_default_config();
+    pwm_config audio_pwm_cfgS = pwm_get_default_config();
 
     gpio_set_function(RX, GPIO_FUNC_PWM);
     pwm_set_gpio_level(RX, 0);
-    pwm_init(audio_pwm_slice_numberS, &audio_pwm_cfg, true);//sharing config for now
+    pwm_config_set_wrap(&audio_pwm_cfgS, PWM_RANGE_S); 
+
+    pwm_init(audio_pwm_slice_numberS, &audio_pwm_cfgS, true);//sharing config for now
 #endif
 	
     pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);

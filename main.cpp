@@ -729,7 +729,7 @@ void fw_callback()
                 switch (mode)
                 {
                 case 0: // piezo only
-                    pwm_set_gpio_level(11, freq);
+                    pwm_set_gpio_level(11, freq * 16);
                     pwm_set_gpio_level(1, 0);
                     break;
                 case 1: // speaker only
@@ -737,7 +737,7 @@ void fw_callback()
                     pwm_set_gpio_level(1, freq);
                     break;
                 case 2: // both only
-                    pwm_set_gpio_level(11, freq);
+                    pwm_set_gpio_level(11, freq * 16);
                     pwm_set_gpio_level(1, freq);
                     break;
                 case 3: // mute all
