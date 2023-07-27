@@ -746,7 +746,7 @@ void fw_callback()
                     break;
                 }
 #else
-                picosystem::psg_vol(2 * (scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / volume));
+                picosystem::psg_vol((scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / volume));
 #endif
 #if 0
             }
