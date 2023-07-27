@@ -430,7 +430,7 @@ namespace picosystem {
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
     pwm_set_gpio_level(AUDIO, 0);
 // limit sound frequency below 10khz to protect piezo.
-	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
+	#define PWM_RANGE_BITS (10) // dirty hack , also defined in hardware.hpp. 
 	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
     pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
     // init extra speaker.
