@@ -11,6 +11,7 @@ See below for instructions how to flash the emulator on the PicoSystem and how t
 Store and play multiple Nintendo NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld. A menu system is included for choosing your games to play.
 
 (Note: Screenshots below do not represent the actual picture quality. The distortion is caused by the camera)
+
 ![image](assets/gamescreen.jpeg)
 
 ![image](assets/menuscreen.jpeg)
