@@ -10,6 +10,13 @@ See below for instructions how to flash the emulator on the PicoSystem and how t
 
 Store and play multiple Nintendo NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld. A menu system is included for choosing your games to play.
 
+There are two sound options:
+
+- Using the internal speaker. Low quality
+- Using a speaker mod, better quality
+
+See below for more info
+
 (Note: Screenshots below do not represent the actual picture quality. The distortion is caused by the camera)
 
 |  ||
@@ -17,7 +24,7 @@ Store and play multiple Nintendo NES games on the [Pimoroni PicoSystem](https://
 | ![image](assets/gamescreen.jpeg) | ![image](assets/menuscreen.jpeg)  |
 
 
-Click on image below to see a demo video.
+Click on image below to see a demo video. For more videos, including sound, see below.
 
 [![Video](https://img.youtube.com/vi/4VYKSMvYWc8/0.jpg)](https://www.youtube.com/watch?v=4VYKSMvYWc8)
 
