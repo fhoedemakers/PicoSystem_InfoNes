@@ -53,13 +53,12 @@ The speaker must be soldered with the red wire to RX and the black wire to groun
 
 ### Videos with sound
 
-Video to hear the difference between speakers:
 
-[![Video](https://img.youtube.com/vi/BRUByhx4GDo/0.jpg)](https://youtu.be/BRUByhx4GDo)
 
-Show the capabilities of the speaker mod
+| hear the difference between speakers  |Show the capabilities of the speaker mod|
+| ------------- | ------------- |
+| [![Video](https://img.youtube.com/vi/BRUByhx4GDo/0.jpg)](https://youtu.be/BRUByhx4GDo) | [![Video](https://img.youtube.com/vi/cA9mOWZZN6I/0.jpg)](https://youtu.be/cA9mOWZZN6I) |
 
-[![Video](https://img.youtube.com/vi/cA9mOWZZN6I/0.jpg)](https://youtu.be/cA9mOWZZN6I)
 
 ## Software installation
 
