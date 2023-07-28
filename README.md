@@ -15,7 +15,7 @@ There are two options for sound playback:
 - [Using the internal speaker. Low quality](#sound-through-internal-speaker)
 - [Using an easy to do speaker mod, better quality](#speaker-mod-for-better-sound)
 
-See below for more info
+[See below for more info on sound](#sound)
 
 (Note: Screenshots below do not represent the actual picture quality. The distortion is caused by the camera)
 
@@ -45,7 +45,7 @@ Those can be found [here for US](https://www.amazon.com/gp/product/B082658QXL/re
 
 > This requires opening up the PicoSystem and some soldering. It is a simple mod, but I don't take responsibility when the PicoSystem gets damaged.
 
-The speaker must be soldered to the RX (red wire) and ground pin of the PicoSystem as shown below:
+The speaker must be soldered with the red wire to RX and the black wire to ground (pad with the  **-** sign) as shown below:
 
 ![image](assets/batterymod.png)
 
