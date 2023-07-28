@@ -28,8 +28,8 @@ Fixes:
 Features:
 
 - Merged the changes done by @newschooldev and @Layer812 to master branch
-- Volume control added
-- Speaker select added
+- Volume control added @fhoedemakers
+- Speaker select added @fhoedemakers
 
 ### 0.7-alpha (2023-07-24)
 
