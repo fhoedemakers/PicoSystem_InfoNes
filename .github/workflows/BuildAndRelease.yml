@@ -17,9 +17,9 @@ permissions:
     
 # Build binary and send to releases
 jobs:
-    build-deploy:
+    build-release:
         runs-on: ubuntu-latest
-        name: Build and deploy
+        name: Build and release
         steps:
           
           - name: Install dependencies
