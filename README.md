@@ -34,10 +34,11 @@ Click on image below to see a demo video. For more videos, including sound, see 
 - EU: [https://www.kiwi-electronics.com/en/picosystem-10913?search=picosystem](https://www.kiwi-electronics.com/en/picosystem-10913?search=picosystem)
 - US: [https://www.adafruit.com/product/5289](https://www.adafruit.com/product/5289)
 
-## Sound through internal speaker
+## Sound
+### Sound through internal speaker
 Sound through the internal piezo speaker is working but limited due to the limitations of this speaker. 
 
-## Speaker mod for better sound
+### Speaker mod for better sound
 The sound quality will be much better (but not perfect and still somewhat limited) by modding the PicoSystem with a 8 Ohm 1W magnetic speaker. 
 Those can be found [here for US](https://www.amazon.com/gp/product/B082658QXL/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) and [here for Europe](https://www.amazon.nl/gp/product/B0BTYDS6FY/ref=ppx_od_dt_b_asin_title_s00?ie=UTF8&psc=1)
 
