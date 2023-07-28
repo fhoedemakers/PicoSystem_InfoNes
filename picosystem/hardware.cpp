@@ -438,7 +438,7 @@ namespace picosystem {
     // init extra speaker.
 #ifdef SPEAKER_ENABLED
 // 122khz frequency support
-	#define PWM_RANGE_BITS_S (10) // dirty hack , also defined in hardware.hpp. 
+	#define PWM_RANGE_BITS_S (11) // dirty hack , also defined in hardware.hpp. 
 	#define PWM_RANGE_S      (1<<PWM_RANGE_BITS_S)
 
     int audio_pwm_slice_numberS = pwm_gpio_to_slice_num(RX);
