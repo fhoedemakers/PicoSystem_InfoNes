@@ -49,7 +49,7 @@ The speaker must be soldered with the red wire to RX and the black wire to groun
 
 ![image](assets/batterymod.png)
 
-You can toggle between speakers in-game by the Y + Down button combo.
+> You can toggle between speakers in-game by the Y + Down button combo.
 
 ### Videos with sound
 
@@ -57,7 +57,7 @@ Video to hear the difference between speakers:
 
 [![Video](https://img.youtube.com/vi/BRUByhx4GDo/0.jpg)](https://youtu.be/BRUByhx4GDo)
 
-Show off the capabilities of the speaker mod
+Show the capabilities of the speaker mod
 
 [![Video](https://img.youtube.com/vi/cA9mOWZZN6I/0.jpg)](https://youtu.be/cA9mOWZZN6I)
 
