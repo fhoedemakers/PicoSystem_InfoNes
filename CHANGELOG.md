@@ -17,6 +17,20 @@ Attention! Base address for uploading rom with picotool has changed again. You h
 See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/README.md) for more info.
 
 ## Release History
+
+### 0.8-alpha (2023-07-28)
+
+Fixes:
+
+- Updated README and CHANGELOG
+- several audio fixes
+
+Features:
+
+- Merged the changes done by @newschooldev and @Layer812 to master branch
+- Volume control added
+- Speaker select added
+
 ### 0.7-alpha (2023-07-24)
 
 Fixes:
