@@ -12,8 +12,8 @@ Store and play multiple Nintendo NES games on the [Pimoroni PicoSystem](https://
 
 There are two sound options:
 
-- Using the internal speaker. Low quality
-- [Using a speaker mod, better quality](#sound-through-internal-speaker)
+- [Using the internal speaker. Low quality](#sound-through-internal-speaker)
+- [Using a speaker mod, better quality](#speaker-mod-for-better-sound)
 
 See below for more info
 
