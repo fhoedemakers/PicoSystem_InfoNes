@@ -12,13 +12,20 @@ Store and play multiple Nintendo NES games on the [Pimoroni PicoSystem](https://
 
 (Note: Screenshots below do not represent the actual picture quality. The distortion is caused by the camera)
 
-![image](assets/gamescreen.jpeg)
+|  ||
+| ------------- | ------------- |
+| ![image](assets/gamescreen.jpeg) | ![image](assets/menuscreen.jpeg)  |
 
-![image](assets/menuscreen.jpeg)
 
 Click on image below to see a demo video.
 
 [![Video](https://img.youtube.com/vi/4VYKSMvYWc8/0.jpg)](https://www.youtube.com/watch?v=4VYKSMvYWc8)
+
+## Where to buy the PicoSystem
+
+- UK: [https://shop.pimoroni.com/products/picosystem?variant=32369546985555](https://shop.pimoroni.com/products/picosystem?variant=32369546985555)
+- EU: [https://www.kiwi-electronics.com/en/picosystem-10913?search=picosystem](https://www.kiwi-electronics.com/en/picosystem-10913?search=picosystem)
+- US: [https://www.adafruit.com/product/5289](https://www.adafruit.com/product/5289)
 
 ## Sound through internal speaker
 Sound through the internal piezo speaker is working but limited due to the limitations of this speaker. 
@@ -38,7 +45,8 @@ You can toggle between speakers in-game by the Y + Down button combo.
 
 Video to hear the difference between speakers:
 
-[![Video](https://img.youtube.com/vi/Y9FxzSAv4T4/0.jpg)](https://www.youtube.com/watch?v=Y9FxzSAv4T4)
+[![Video](https://img.youtube.com/vi/BRUByhx4GDo/0.jpg)](https://youtu.be/BRUByhx4GDo)
+
 
 
 ## Uploading games and flashing the emulator
