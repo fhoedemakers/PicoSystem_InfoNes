@@ -33,6 +33,8 @@ Features:
 
 ### 0.7-alpha (2023-07-24)
 
+> this release is never published
+
 Fixes:
 
  - None
