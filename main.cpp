@@ -471,7 +471,7 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
             ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) / 5;
 #else 
         final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * 1024 / 1280;
+            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * 2048 / 1280;
 #endif
     }
     final_wave[fw_wr][i] = -1;
@@ -724,12 +724,12 @@ void fw_callback()
                 // int scaler = 600;
 #endif
 #ifdef SPEAKER_ENABLED
-                int scaler = 10;
+                int scaler = 20;
                 uint16_t freq = (scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / (volume + 1));
                 switch (mode)
                 {
                 case 0: // piezo only
-                    pwm_set_gpio_level(11, freq * 16);
+                    pwm_set_gpio_level(11, freq * 8);
                     pwm_set_gpio_level(1, 0);
                     break;
                 case 1: // speaker only
@@ -737,7 +737,7 @@ void fw_callback()
                     pwm_set_gpio_level(1, freq);
                     break;
                 case 2: // both only
-                    pwm_set_gpio_level(11, freq * 16);
+                    pwm_set_gpio_level(11, freq * 8);
                     pwm_set_gpio_level(1, freq);
                     break;
                 case 3: // mute all
@@ -759,6 +759,7 @@ void fw_callback()
                 sleep_us(1);
             }
         }
+        final_wave[fw_rd][0] = -1;
         fw_rd = fw_wr;
     }
 }
