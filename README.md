@@ -61,21 +61,26 @@ Show the capabilities of the speaker mod
 
 [![Video](https://img.youtube.com/vi/cA9mOWZZN6I/0.jpg)](https://youtu.be/cA9mOWZZN6I)
 
+## Software installation
 
-## Uploading games and flashing the emulator
+### flashing the emulator and uploading games to the PicoSystem using a Windows App
 Since there is no SD card slot available, a companion app for Microsoft Windows is created that lets the user choose games and flash them to the Pico.
 [More information here](https://github.com/fhoedemakers/PicoSystemInfoNesLoader). The app is included in the latest release. 
 The application also allows you to flash the emulator when not installed or a newer version is available. No more need for manually flashing.
 
 ![image](assets/Screen.png)
 
-## Manually flashing the PicoSystem
+### Manually flashing the emulator on PicoSystem
+If you don't want or can't to use the Windows Application
+
 - Download **PicoSystem_InfoNes.uf2** from the [releases page](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases/latest).
 - Connect PicoSystem using an USB-C cable to your computer. Make sure the PicoSystem is switched off.
 - Push and hold the X button then the power-on button. Release the buttons and the drive RPI-RP2 appears on your computer.
 - Drag and drop the UF2 file on to the RPI-RP2 drive. The PicoSystem will reboot and will now run the emulator.
 
-## Manually uploading a game
+### Manually uploading a game
+If you don't want or can't to use the Windows Application
+
 Load single game rom by setting the device in BOOTSEL mode. (Connect to computer then Hold X and power on device)
 The ROM should be placed at address **0x10110000**, and can be  transferred using [picotool](https://github.com/raspberrypi/picotool).
 
@@ -85,7 +90,7 @@ picotool load rom.nes -t bin -o 0x10110000
 
 **Attention: the upload address has been changed from 0x10080000 to 0x10110000.** This is because of the additional size of the built-in game baked into the executable.
 
-## Manually uploading multiple games
+### Manually uploading multiple games
 
 > All games must have the .nes extension and must be in the same directory
 
