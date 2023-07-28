@@ -1,11 +1,11 @@
 name: Build new version and create a release when tag is pushed
 
 # Only deploy when a new tag is pushed
+# Old version do not use this. Docker is overkill for this
 on:
     push:
         tags:
-          - "v*.*-alpha"
-          - "v*.*.*"
+          - "v99999"
           
 # Must match the project() name in CMakeLists.txt
 env:
