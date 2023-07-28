@@ -64,7 +64,10 @@ The speaker must be soldered with the red wire to RX and the black wire to groun
 
 ### flashing the emulator and uploading games to the PicoSystem using a Windows App
 Since there is no SD card slot available, a companion app for Microsoft Windows is created that lets the user choose games and flash them to the Pico.
-[More information here](https://github.com/fhoedemakers/PicoSystemInfoNesLoader). The app is included in the latest release of this repository. 
+[More information here](https://github.com/fhoedemakers/PicoSystemInfoNesLoader). 
+
+[The Windows application is also included in the latest release of this repository](https://github.com/fhoedemakers/PicoSystem_InfoNes/releases). 
+
 The application also allows you to flash the emulator when not installed or a newer version is available. No more need for manually flashing.
 
 ![image](assets/Screen.png)
