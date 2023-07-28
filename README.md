@@ -2,18 +2,18 @@
 
 ## What is it
 
-A Nintendo NES emulator for the Pimoroni PiocSystem RP2040 gaming handheld.
+A Nintendo NES emulator for the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld.
 
 Emulater is bundled with the freeware homebrew game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html).
 
 See below for instructions how to flash the emulator on the PicoSystem and how to load games.
 
-Store and play multiple Nintendo NES games on the [Pimoroni PicoSystem](https://shop.pimoroni.com/products/picosystem) RP2040 gaming handheld. A menu system is included for choosing your games to play.
+Store and play multiple Nintendo NES games on the Pimoroni PicoSystem RP2040 gaming handheld. A menu system is included for choosing your games to play.
 
-There are two options for:
+There are two options for sound playback:
 
 - [Using the internal speaker. Low quality](#sound-through-internal-speaker)
-- [Using a speaker mod, better quality](#speaker-mod-for-better-sound)
+- [Using an easy to do speaker mod, better quality](#speaker-mod-for-better-sound)
 
 See below for more info
 
