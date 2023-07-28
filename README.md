@@ -51,10 +51,15 @@ The speaker must be soldered to the RX (red wire) and ground pin of the PicoSyst
 
 You can toggle between speakers in-game by the Y + Down button combo.
 
+### Videos with sound
+
 Video to hear the difference between speakers:
 
 [![Video](https://img.youtube.com/vi/BRUByhx4GDo/0.jpg)](https://youtu.be/BRUByhx4GDo)
 
+Show off the capabilities of the speaker mod
+
+[![Video](https://img.youtube.com/vi/cA9mOWZZN6I/0.jpg)](https://youtu.be/cA9mOWZZN6I)
 
 
 ## Uploading games and flashing the emulator
