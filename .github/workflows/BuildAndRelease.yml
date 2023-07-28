@@ -48,14 +48,18 @@ jobs:
                  cmake .. && \
                  make
 
+          - name: download latest release of PicoSystemInfoNesLoader.zip
+            run: |
+                 ASSET_URL=$(curl -s "https://api.github.com/repos/fhoedemakers/PicoSystemInfoNesLoader/releases/latest" | jq -r '.assets[0].browser_download_url')
+                 wget "$ASSET_URL" -O PicoSystemInfoNesLoader.zip
+
           - name: Create release
             uses: softprops/action-gh-release@v1
             if: startsWith(github.ref, 'refs/tags/')
             with:
-                files: build/${{ env.APP_NAME }}.uf2
+                files: |
+                       build/${{ env.APP_NAME }}.uf2
+                       PicoSystemInfoNesLoader.zip           
                 body_path: CHANGELOG.md
           
-          - name: Upload additional asset
-            run: |
-                  chmod +x Linux-X64/AddAssetToRelease  && \
-                  Linux-X64/AddAssetToRelease --token=${{ github.token }}
+         
