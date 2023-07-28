@@ -6,7 +6,7 @@ Comes with Homebrew game Blade Buster. When no rom is loaded, this game starts.
 
 Support for flashing multiple games. In this case a menu is displayed in the emulator.
 
-A [Micosoft Windows companion application](https://github.com/fhoedemakers/PicoSystemInfoNesLoader) is added, so the user can easyly flash roms and flash a new version of the emulator.  
+A [Micosoft Windows companion application](https://github.com/fhoedemakers/PicoSystemInfoNesLoader) is added to this release, so the user can easyly flash roms and flash a new version of the emulator.  
 
 Extract the zip-file **PicoSystemInfoNesLoader.zip** to a folder of choice, then start **PicoSystemInfoNesLoader.exe** in subfolder PicoSystemInfoNesLoader.
 
