@@ -50,5 +50,4 @@ Fixes:
 Features:
 
  - Audio implemented by @Layer812. The speaker is limited, but sounds ok.
- - Initial release of MiSTer_tty2Waveshare program
  - Added workflow to automatically generate uf2 binary on each release
