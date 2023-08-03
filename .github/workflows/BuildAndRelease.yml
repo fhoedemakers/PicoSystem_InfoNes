@@ -3,10 +3,13 @@ name: Build and create a release when tag is pushed
 # Only deploy when a new tag is pushed
 on:
     push:
-        tags:
-          - "v*.*-alpha"
-          - "v*.*.*"
-          
+        # tags:
+        #   - "v*.*-alpha"
+        #   - "v*.*.*"
+        branches: [ master ]
+    pull_request:
+        branches: [ master ]        
+
 # Must match the project() name in CMakeLists.txt
 env:
     APP_NAME: PicoSystem_InfoNes
@@ -26,7 +29,7 @@ jobs:
             run: |
                  sudo apt update && \
                  sudo apt install -y git python3 && \
-                 sudo apt install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
+                 sudo apt install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential libusb-1.0-0-dev
                  
           - name: Check out this repository
             uses: actions/checkout@v3
@@ -34,6 +37,23 @@ jobs:
           - name: Print Working directory
             run: echo $HOME && pwd && ls -la
 
+          - name: Update line containing pico_set_program_version() in CMakelists.txt with tag name.
+            run: |
+                 # Extract the tag name that triggered the event and remove the 'refs/tags/' prefix
+                 input_string=${{ github.ref }}
+                 input_string="refs/tags/v99.99.99"
+                 prefix="refs/tags/"
+                 tag="No versioninfo found"
+                 if [[ $input_string == $prefix* ]]; then
+                      echo "The string starts with 'refs/tags/'."
+                      tag="${input_string#$prefix}"     
+                      echo "Tag is ${tag}"
+                      sed -i "s/^[[:space:]]*pico_set_program_version(.*/pico_set_program_version(${{ env.APP_NAME }} \"$tag\")/" CMakeLists.txt   
+                 else
+                      echo "The string does not start with 'refs/tags/'."
+                 fi
+                 grep "pico_set_program_version" CMakeLists.txt
+                 
           - name: Install Pico SDk
             run: |
                  cd $HOME && \
@@ -41,12 +61,29 @@ jobs:
                  cd pico-sdk/ && \
                  git submodule update --init
 
+          - name: Install picotool
+            run: |
+                 cd $HOME && \
+                 export PICO_SDK_PATH=$HOME/pico-sdk && \
+                 git clone https://github.com/raspberrypi/picotool.git --branch master && \
+                 cd picotool/ && \
+                 mkdir build && \
+                 cd build && \
+                 cmake .. && \
+                 make
+
           - name: Build the project
             run: |
                  export PICO_SDK_PATH=$HOME/pico-sdk && \
                  mkdir build && cd build && \
                  cmake .. && \
                  make
+
+          - name: Show release info using picotool
+            run: |
+                 export PICO_SDK_PATH=$HOME/pico-sdk && \
+                 $HOME/picotool/build/picotool info build/${{ env.APP_NAME }}.uf2 && \
+                 echo "-----------------------------" 
 
           - name: download latest release of PicoSystemInfoNesLoader.zip
             run: |
