@@ -724,8 +724,8 @@ void fw_callback()
                 // int scaler = 600;
 #endif
 #ifdef SPEAKER_ENABLED
-                int scaler = 20;
-                uint16_t freq = (scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / (volume + 1));
+               
+                uint16_t freq = (final_wave[fw_rd][i] * volume / 100);
                 switch (mode)
                 {
                 case 0: // piezo only
