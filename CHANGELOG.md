@@ -22,7 +22,7 @@ See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/READ
 
 Fixes:
 
-- Adjust for overclock. @Layer812
+- Adjust for overclock. [@Layer812](https://github.com/Layer812)
 
 Features:
 
