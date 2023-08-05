@@ -736,8 +736,11 @@ void fw_callback()
                 // int scaler = 600;
 #endif
 #ifdef SPEAKER_ENABLED
-
-            uint16_t freq = (final_wave[fw_rd][i] * volume / 100);
+            // Layer812
+            int scaler = 20;
+            uint16_t freq = (scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / (volume + 1));
+            // NewSchool 
+            // uint16_t freq = (final_wave[fw_rd][i] * volume / 100);
             switch (mode)
             {
             case 0: // piezo only
@@ -853,6 +856,12 @@ int main()
         // When reboot is caused by built-in game, startingGame will be -1
         int8_t startingGame = (int8_t)SRAM[GAMEINDEXPOS];
         printf("Game caused reboot: %d\n", startingGame);
+          // Restore speaker and volume settings
+        if (strncmp((char *)&SRAM[VOLUMEINDICATORPOS], VOLUMEINDICATORSTRING, 3) == 0)
+        {
+            mode = SRAM[MODEPOS];
+            volume = SRAM[VOLUMEPOS];
+        }
         // + start next Game
         // - start previous game
         // R reset to menu
@@ -870,19 +879,15 @@ int main()
             if (advance == '-')
                 romSelector_.prev();
         }
-        if (advance == 'B')
+        if (advance == 'B') {
             romSelector_.selectcustomrom();
+        }
         if (advance == 'R')
         {
             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage, true));
         }
         prevButtons = -1;
-        // Restore speaker and volume settings
-        if (strncmp((char *)&SRAM[VOLUMEINDICATORPOS], VOLUMEINDICATORSTRING, 3) == 0)
-        {
-            mode = SRAM[MODEPOS];
-            volume = SRAM[VOLUMEPOS];
-        }
+      
     }
     else
     {
