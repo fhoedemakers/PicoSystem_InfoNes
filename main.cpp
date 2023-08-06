@@ -478,13 +478,10 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
 
     for (i = 0; i < samples; i++)
     {
-#ifndef NO_OVERCLOCK
+        //based on infones linux, 5 channels come in 1 Byte at a time per channel, which is averaged to a single byte.
+        //in fw_callback we deal with byte conversion to 16 bit for the pwm level. line 738
         final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * 4096 / 1280;
-#else
-        final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) * 2048 / 1280;
-#endif
+            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) / 5;
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -715,7 +712,7 @@ int InfoNES_Menu()
 }
 
 using namespace picosystem;
-
+#define levelmax 61535
 void fw_callback()
 {
     uint64_t et, nt;
@@ -730,21 +727,16 @@ void fw_callback()
         {
             et = to_us_since_boot(get_absolute_time());
             nt = et + SAMPLE_INTERVAL;
-#if 0
-            if (volume > 0)
-            {
-                // int scaler = 600;
-#endif
+
 #ifdef SPEAKER_ENABLED
-            // Layer812
-            int scaler = 20;
-            uint16_t freq = (scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / (volume + 1));
+          
             // NewSchool 
-            // uint16_t freq = (final_wave[fw_rd][i] * volume / 100);
+            uint16_t freq_prep = (final_wave[fw_rd][i] * levelmax / 256); //byte incoming * levelmax(65535) / byte max
+            uint16_t freq = (freq_prep * volume / FW_VOL_MAX); //Percentage of max freq
             switch (mode)
             {
             case 0: // piezo only
-                pwm_set_gpio_level(11, freq * 8);
+                pwm_set_gpio_level(11, freq );
                 pwm_set_gpio_level(1, 0);
                 break;
             case 1: // speaker only
@@ -752,7 +744,7 @@ void fw_callback()
                 pwm_set_gpio_level(1, freq);
                 break;
             case 2: // both only
-                pwm_set_gpio_level(11, freq * 8);
+                pwm_set_gpio_level(11, freq );
                 pwm_set_gpio_level(1, freq);
                 break;
             case 3: // mute all
@@ -761,13 +753,9 @@ void fw_callback()
                 break;
             }
 #else
-            picosystem::psg_vol((scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / volume));
+            picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / 256) * volume /  FW_VOL_MAX);
 #endif
-#if 0
-            }
-            else
-                picosystem::psg_vol(0);
-#endif
+
             while (et < nt)
             {
                 et = to_us_since_boot(get_absolute_time());

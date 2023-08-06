@@ -423,9 +423,8 @@ namespace picosystem {
     irq_set_exclusive_handler(DMA_IRQ_0, dma_complete);
     irq_set_enabled(DMA_IRQ_0, true);
 
-// limit sound frequency below 10khz to protect piezo.
-	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
-	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
+#define PWM_RANGE_BITS (14)  
+#define PWM_RANGE      ((1 << PWM_RANGE_BITS)+4096) //highest I can get it with out causing a ringing in high pitch. 
 	
     // initialise audio pwm pin
     int audio_pwm_slice_number = pwm_gpio_to_slice_num(AUDIO);
@@ -437,9 +436,9 @@ namespace picosystem {
     pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
     // init extra speaker.
 #ifdef SPEAKER_ENABLED
-// 122khz frequency support
-	#define PWM_RANGE_BITS_S (11) // dirty hack , also defined in hardware.hpp. 
-	#define PWM_RANGE_S      (1<<PWM_RANGE_BITS_S)
+
+	#define PWM_RANGE_BITS_S (14)  //seems good enough. 
+	#define PWM_RANGE_S      ((1 << PWM_RANGE_BITS_S) +4096)
 
     int audio_pwm_slice_numberS = pwm_gpio_to_slice_num(RX);
     pwm_config audio_pwm_cfgS = pwm_get_default_config();
