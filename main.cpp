@@ -37,7 +37,7 @@ bool fps_enabled = false;
 
 // final wave buffer
 int fw_wr, fw_rd;
-unsigned int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
+int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
 
 // change volume
 #define FW_VOL_MAX 100
@@ -774,6 +774,7 @@ int main()
     //    set_fw_vol(0); // for mute
 
     fw_wr = fw_rd = 0;
+    final_wave[0][0] = final_wave[1][0] = -1;
     multicore_launch_core1(fw_callback);
 
     backlight(100);
