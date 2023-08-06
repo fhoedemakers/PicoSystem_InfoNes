@@ -37,7 +37,7 @@ bool fps_enabled = false;
 
 // final wave buffer
 int fw_wr, fw_rd;
-unsigned int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
+int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples per sync */
 
 // change volume
 #define FW_VOL_MAX 100
@@ -730,30 +730,36 @@ void fw_callback()
 
 #ifdef SPEAKER_ENABLED
           
-            // NewSchool 
-            uint16_t freq_prep = (final_wave[fw_rd][i] * levelmax / 256); //byte incoming * levelmax(65535) / byte max
-            uint16_t freq = (freq_prep * volume / FW_VOL_MAX); //Percentage of max freq
-            switch (mode)
-            {
-            case 0: // piezo only
-                pwm_set_gpio_level(11, freq );
-                pwm_set_gpio_level(1, 0);
-                break;
-            case 1: // speaker only
-                pwm_set_gpio_level(11, 0);
-                pwm_set_gpio_level(1, freq);
-                break;
-            case 2: // both only
-                pwm_set_gpio_level(11, freq );
-                pwm_set_gpio_level(1, freq);
-                break;
-            case 3: // mute all
-                pwm_set_gpio_level(11, 0);
-                pwm_set_gpio_level(1, 0);
-                break;
+            
+                // NewSchool from byte to 16, while maintaining ratio 
+                uint16_t pwm_level_16 = (final_wave[fw_rd][i] * levelmax / 256); //byte incoming * levelmax(65535) / byte max
+                uint16_t pwm_level_volume = (pwm_level_16 * volume / FW_VOL_MAX); //Percentage of max freq
+                switch (mode)
+                {
+                case 0: // piezo only
+                    pwm_set_gpio_level(11, pwm_level_volume);
+                    pwm_set_gpio_level(1, 0);
+                    break;
+                case 1: // speaker only
+                    pwm_set_gpio_level(11, 0);
+                    pwm_set_gpio_level(1, pwm_level_volume);
+                    break;
+                case 2: // both only
+                    pwm_set_gpio_level(11, pwm_level_volume);
+                    pwm_set_gpio_level(1, pwm_level_volume);
+                    break;
+                case 3: // mute all
+                    pwm_set_gpio_level(11, 0);
+                    pwm_set_gpio_level(1, 0);
+                    break;
+                }
             }
 #else
-            picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / 256) * volume /  FW_VOL_MAX);
+            
+           
+                // NewSchool from byte to 16, while maintaining ratio + volume ratio
+                picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / 256) * volume / FW_VOL_MAX);
+            
 #endif
 
             while (et < nt)
@@ -764,7 +770,7 @@ void fw_callback()
         }
         final_wave[fw_rd][0] = -1;
         fw_rd = fw_wr;
-    }
+    
 }
 
 int main()
@@ -776,7 +782,7 @@ int main()
     //    _start_audio();
     // set_fw_vol(50);
     //    set_fw_vol(0); // for mute
-
+    final_wave[0][0] = final_wave[1][0] = -1; //click fix
     fw_wr = fw_rd = 0;
     multicore_launch_core1(fw_callback);
 
