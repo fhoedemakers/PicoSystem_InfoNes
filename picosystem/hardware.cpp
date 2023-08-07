@@ -423,9 +423,13 @@ namespace picosystem {
     irq_set_exclusive_handler(DMA_IRQ_0, dma_complete);
     irq_set_enabled(DMA_IRQ_0, true);
 
+// Steps in Finalwave.
+#define FW_STEP	1280
+
 // limit sound frequency below 10khz to protect piezo.
-	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
-	#define PWM_RANGE      (1<<PWM_RANGE_BITS)
+//	#define PWM_RANGE_BITS (14) // dirty hack , also defined in hardware.hpp. 
+// 250M / FW_STEP(1280) / 10 = 19530Hz 
+#define PWM_RANGE      (FW_STEP * 10)
 	
     // initialise audio pwm pin
     int audio_pwm_slice_number = pwm_gpio_to_slice_num(AUDIO);
@@ -438,8 +442,8 @@ namespace picosystem {
     // init extra speaker.
 #ifdef SPEAKER_ENABLED
 // 122khz frequency support
-	#define PWM_RANGE_BITS_S (11) // dirty hack , also defined in hardware.hpp. 
-	#define PWM_RANGE_S      (1<<PWM_RANGE_BITS_S)
+//	#define PWM_RANGE_BITS_S (11) // dirty hack , also defined in hardware.hpp. 
+	#define PWM_RANGE_S      (FW_STEP)
 
     int audio_pwm_slice_numberS = pwm_gpio_to_slice_num(RX);
     pwm_config audio_pwm_cfgS = pwm_get_default_config();
