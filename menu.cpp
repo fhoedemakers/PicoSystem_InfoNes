@@ -188,10 +188,11 @@ void displayRoms(Frens::RomLister romlister, int startIndex)
 {
     char buffer[ROMLISTER_MAXPATH + 4];
     auto y = STARTROW;
+    
     auto entries = romlister.GetEntries();
     ClearScreen(screenBuffer, bgcolor);
     putText(1, 0, "Choose a rom to play:", fgcolor, bgcolor);
-    putText(1, SCREEN_ROWS - 1, "A: Select, B: Back", fgcolor, bgcolor);
+    putText(1, SCREEN_ROWS - 1, "A:Select, B:Back   " PICO_PROGRAM_VERSION_STRING, fgcolor, bgcolor);
     for (auto index = startIndex; index < romlister.Count(); index++)
     {
         if (y <= ENDROW)
@@ -282,6 +283,9 @@ void showSplashScreen()
     strcpy(s, "@Layer812");
     putText(SCREEN_COLS / 2 - strlen(s) / 2, 20, s, CLIGHTBLUE, bgcolor);
    
+    strcpy(s, PICO_PROGRAM_VERSION_STRING);
+    putText(SCREEN_COLS / 2 - strlen(s) / 2, 23, s, fgcolor, bgcolor);
+
     strcpy(s, "https://github.com/");
     putText(SCREEN_COLS / 2 - strlen(s) / 2, 25, s, CLIGHTBLUE, bgcolor);
     strcpy(s, "fhoedemakers/");
@@ -298,7 +302,7 @@ void showSplashScreen()
         }
         DrawScreen(-1);
         RomSelect_PadState(&PAD1_Latch);
-        if (PAD1_Latch > 0 || (frameCount - startFrame) > 250)
+        if (PAD1_Latch > 0 || (frameCount - startFrame) > 500)
         {
             return;
         }
