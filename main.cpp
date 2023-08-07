@@ -842,7 +842,13 @@ int main()
 
     // When system is rebooted after flashing SRAM, load the saved state and volume from flash and proceed.
     loadState();
-
+    // Restore speaker and volume settings
+    if (strncmp((char *)&SRAM[VOLUMEINDICATORPOS], VOLUMEINDICATORSTRING, 3) == 0)
+    {
+            mode = SRAM[MODEPOS];
+            volume = SRAM[VOLUMEPOS];
+            printf("Restored mode %d, volume %d\n", mode, volume);
+    }
     if (watchdog_caused_reboot() && strncmp((char *)SRAM, STATUSINDICATORSTRING, 3) == 0)
     {
 
@@ -850,12 +856,7 @@ int main()
         // When reboot is caused by built-in game, startingGame will be -1
         int8_t startingGame = (int8_t)SRAM[GAMEINDEXPOS];
         printf("Game caused reboot: %d\n", startingGame);
-          // Restore speaker and volume settings
-        if (strncmp((char *)&SRAM[VOLUMEINDICATORPOS], VOLUMEINDICATORSTRING, 3) == 0)
-        {
-            mode = SRAM[MODEPOS];
-            volume = SRAM[VOLUMEPOS];
-        }
+       
         // + start next Game
         // - start previous game
         // R reset to menu
