@@ -481,7 +481,7 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
         //based on infones linux, 5 channels come in 1 Byte at a time per channel, which is averaged to a single byte.
         //in fw_callback we deal with byte conversion to 16 bit for the pwm level. line 738
         final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) / 5;
+            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) /5;
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -712,7 +712,7 @@ int InfoNES_Menu()
 }
 
 using namespace picosystem;
-#define levelmax 61535
+#define levelmax 53535 //palindrome 
 void fw_callback()
 {
     uint64_t et, nt;
@@ -732,8 +732,8 @@ void fw_callback()
           
             
                 // NewSchool from byte to 16, while maintaining ratio 
-                uint16_t pwm_level_16 = (final_wave[fw_rd][i] * levelmax / 256); //byte incoming * levelmax(65535) / byte max
-                uint16_t pwm_level_volume = (pwm_level_16 * volume / FW_VOL_MAX); //Percentage of max freq
+            uint16_t pwm_level_16 = final_wave[fw_rd][i] *levelmax / 256; //byte incoming * levelmax(< 65535) / byte max
+            uint16_t pwm_level_volume = pwm_level_16 * volume / FW_VOL_MAX; //Percentage of max freq
                 switch (mode)
                 {
                 case 0: // piezo only
@@ -898,6 +898,10 @@ int main()
         InfoNES_Main();
         if (jumptomenu)
         {
+            pwm_set_gpio_level(11, 0);
+#ifdef SPEAKER_ENABLED
+            pwm_set_gpio_level(1, 0);
+#endif //fix sound continue from exit to menu while playing a game. 
             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage));
         }
     }
