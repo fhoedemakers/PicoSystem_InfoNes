@@ -478,10 +478,9 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
 
     for (i = 0; i < samples; i++)
     {
-        //based on infones linux, 5 channels come in 1 Byte at a time per channel, which is averaged to a single byte.
-        //in fw_callback we deal with byte conversion to 16 bit for the pwm level. line 738
+        
         final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]) /5;
+            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]);
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -713,6 +712,7 @@ int InfoNES_Menu()
 
 using namespace picosystem;
 #define levelmax 53535 //palindrome 
+#define buffermax 1280
 void fw_callback()
 {
     uint64_t et, nt;
@@ -732,8 +732,12 @@ void fw_callback()
           
             
                 // NewSchool from byte to 16, while maintaining ratio 
-            uint16_t pwm_level_16 = final_wave[fw_rd][i] *levelmax / 256; //byte incoming * levelmax(< 65535) / byte max
+            uint16_t pwm_level_16 = final_wave[fw_rd][i] *levelmax / buffermax; //byte incoming * levelmax(< 65535) / byte max
             uint16_t pwm_level_volume = pwm_level_16 * volume / FW_VOL_MAX; //Percentage of max freq
+         
+            // the change in volume isn't linear - we correct for this here
+          //  float curve = 2.4f;
+          //  uint32_t pwm_level_volume = (pow((float)(volume) / (float)FW_VOL_MAX, curve) * pwm_level_16);
                 switch (mode)
                 {
                 case 0: // piezo only
@@ -758,7 +762,7 @@ void fw_callback()
             
            
                 // NewSchool from byte to 16, while maintaining ratio + volume ratio
-                picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / 256) * volume / FW_VOL_MAX);
+                picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / buffermax) * volume / FW_VOL_MAX);
             
 #endif
 
