@@ -478,9 +478,7 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
 
     for (i = 0; i < samples; i++)
     {
-        
-        final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]);
+        final_wave[fw_wr][i] = (unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i];
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -611,6 +609,21 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             fpsBuffer += 8;
         }
     }
+
+#ifdef SPEAKER_ENABLED
+    if (showSpeakerMode > 0 && line >= 96 && line < 104)
+    {
+        int l = (strlen(modeStrings[mode]) * 8) / 2;
+        fpsBuffer = lb + 104 - l;
+        int rowInChar = line % 8;
+        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
+        {
+            char aChar = modeStrings[mode][i];
+            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
+            fpsBuffer += 8;
+        }
+    }
+#endif
     if (showVolume > 0 && line >= 120 && line < 128)
     {
         fpsBuffer = lb + 120;
@@ -629,20 +642,6 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             fpsBuffer += 8;
         }
     }
-#ifdef SPEAKER_ENABLED
-    if (showSpeakerMode > 0 && line >= 120 && line < 128)
-    {
-        int l = (strlen(modeStrings[mode]) * 8) / 2;
-        fpsBuffer = lb + 120 - l;
-        int rowInChar = line % 8;
-        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
-        {
-            char aChar = modeStrings[mode][i];
-            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
-            fpsBuffer += 8;
-        }
-    }
-#endif
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
 
@@ -711,7 +710,12 @@ int InfoNES_Menu()
 }
 
 using namespace picosystem;
-#define levelmax 53535 //palindrome 
+#define speakerlevelmax 5669 //pwm wrap + 1
+
+//piezo has a volume drop over a short range of audible sound, this boosts the sound. 
+//*3 is the most I can get with out the top losing resolution. 
+#define piezolevelmax 5669 * 3
+
 #define buffermax 1280
 void fw_callback()
 {
@@ -729,28 +733,29 @@ void fw_callback()
             nt = et + SAMPLE_INTERVAL;
 
 #ifdef SPEAKER_ENABLED
-          
-            
-                // NewSchool from byte to 16, while maintaining ratio 
-            uint16_t pwm_level_16 = final_wave[fw_rd][i] *levelmax / buffermax; //byte incoming * levelmax(< 65535) / byte max
-            uint16_t pwm_level_volume = pwm_level_16 * volume / FW_VOL_MAX; //Percentage of max freq
-         
-            // the change in volume isn't linear - we correct for this here
-          //  float curve = 2.4f;
-          //  uint32_t pwm_level_volume = (pow((float)(volume) / (float)FW_VOL_MAX, curve) * pwm_level_16);
+
+
+            if (final_wave[fw_rd][i] > 0)
+            {
+                uint16_t pwm_piezo_level_16 = final_wave[fw_rd][i] * piezolevelmax / (float)buffermax;
+                uint16_t pwm_piezo_level_volume = pwm_piezo_level_16 * volume / FW_VOL_MAX;
+
+                uint16_t pwm_speaker_level_16 = final_wave[fw_rd][i] * speakerlevelmax / (float)buffermax;
+                uint16_t pwm_speaker_level_volume = pwm_speaker_level_16 * volume / FW_VOL_MAX; //Percentage of max freq
+
                 switch (mode)
                 {
                 case 0: // piezo only
-                    pwm_set_gpio_level(11, pwm_level_volume);
+                    pwm_set_gpio_level(11, pwm_piezo_level_volume);
                     pwm_set_gpio_level(1, 0);
                     break;
                 case 1: // speaker only
                     pwm_set_gpio_level(11, 0);
-                    pwm_set_gpio_level(1, pwm_level_volume);
+                    pwm_set_gpio_level(1, pwm_speaker_level_volume);
                     break;
                 case 2: // both only
-                    pwm_set_gpio_level(11, pwm_level_volume);
-                    pwm_set_gpio_level(1, pwm_level_volume);
+                    pwm_set_gpio_level(11, pwm_piezo_level_volume);
+                    pwm_set_gpio_level(1, pwm_speaker_level_volume);
                     break;
                 case 3: // mute all
                     pwm_set_gpio_level(11, 0);
@@ -758,22 +763,28 @@ void fw_callback()
                     break;
                 }
             }
+            else
+            {
+                pwm_set_gpio_level(11, 0);
+                pwm_set_gpio_level(1, 0);
+            }
 #else
-            
-           
-                // NewSchool from byte to 16, while maintaining ratio + volume ratio
-                picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / buffermax) * volume / FW_VOL_MAX);
-            
+
+
+            // NewSchool from byte to 16, while maintaining ratio + volume ratio
+            picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / buffermax) * volume / FW_VOL_MAX);
+        
 #endif
 
-            while (et < nt)
-            {
-                et = to_us_since_boot(get_absolute_time());
-                sleep_us(1);
-            }
+        while (et < nt)
+        {
+            et = to_us_since_boot(get_absolute_time());
+            sleep_us(1);
         }
-        final_wave[fw_rd][0] = -1;
-        fw_rd = fw_wr;
+        }
+    }
+    final_wave[fw_rd][0] = -1;
+    fw_rd = fw_wr;
     
 }
 

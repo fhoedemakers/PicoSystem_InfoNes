@@ -423,9 +423,23 @@ namespace picosystem {
     irq_set_exclusive_handler(DMA_IRQ_0, dma_complete);
     irq_set_enabled(DMA_IRQ_0, true);
 
-#define PWM_RANGE_BITS (14)  
-#define PWM_RANGE      ((1 << PWM_RANGE_BITS)+4096) //highest I can get it with out causing a ringing in high pitch. 
-	
+    //audio example at 44,100 using wrap + 1 as level max. 
+    // https://raspberrypi.stackexchange.com/questions/137671/cant-generate-pwm-output-on-rp2040-other-than-square-waves
+    // 3,015 * 1.00029 * 44,100 = 133,000,000
+    //pwm_config_set_clkdiv(&config, 1.00029f);
+    //pwm_config_set_wrap(&config, 3015);
+   
+    // x * yf * 44100 = 250,000,000 =  5668.93424
+    // x = 5668.93424 / 5668 = 1.00016f;
+    //  5668 * 1.00016f * 44100 = 250,000,000
+     
+    // a wrap of 1280 @ 44100hz needs div of 4.428854f  = 250,000,000
+    // a wrap of 12800 @ 44100hz needs a div of 0.442885f which is lower then the 1.0f min.
+    //  
+    // if your trying t get 12800hz from the pmw div or wrap must be changed
+    // a wrap of 19,531 * 1.00001f * 12800hz = 250000000 
+	// the default pwm config sets div to 1.0f
+    // 
     // initialise audio pwm pin
     int audio_pwm_slice_number = pwm_gpio_to_slice_num(AUDIO);
     pwm_config audio_pwm_cfg = pwm_get_default_config();
@@ -433,21 +447,22 @@ namespace picosystem {
     gpio_set_function(AUDIO, GPIO_FUNC_PWM);
     pwm_set_gpio_level(AUDIO, 0);
 
-    pwm_config_set_wrap(&audio_pwm_cfg, PWM_RANGE); 
+    pwm_config_set_clkdiv(&audio_pwm_cfg, 1.00016f);
+    pwm_config_set_wrap(&audio_pwm_cfg, 5668);
+    
     // init extra speaker.
 #ifdef SPEAKER_ENABLED
-
-	#define PWM_RANGE_BITS_S (14)  //seems good enough. 
-	#define PWM_RANGE_S      ((1 << PWM_RANGE_BITS_S) +4096)
 
     int audio_pwm_slice_numberS = pwm_gpio_to_slice_num(RX);
     pwm_config audio_pwm_cfgS = pwm_get_default_config();
 
     gpio_set_function(RX, GPIO_FUNC_PWM);
     pwm_set_gpio_level(RX, 0);
-    pwm_config_set_wrap(&audio_pwm_cfgS, PWM_RANGE_S); 
+    pwm_config_set_clkdiv(&audio_pwm_cfgS, 1.00016f);
+    pwm_config_set_wrap(&audio_pwm_cfgS, 5668); //5669 maxlevel
+  
 
-    pwm_init(audio_pwm_slice_numberS, &audio_pwm_cfgS, true);//sharing config for now
+    pwm_init(audio_pwm_slice_numberS, &audio_pwm_cfgS, true);
 #endif
 	
     pwm_init(audio_pwm_slice_number, &audio_pwm_cfg, true);
