@@ -18,6 +18,16 @@ See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/READ
 
 ## Release History
 
+### 0.9-alpha (2023-08-03)
+
+Fixes:
+
+- Adjust for overclock. [@Layer812](https://github.com/Layer812)
+
+Features:
+
+- none
+
 ### 0.8-alpha (2023-07-28)
 
 Fixes:

@@ -63,6 +63,10 @@ int showSpeakerMode = 0;      // When > 0 speaker mode is shown on screen
 const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 #endif
 
+bool saveSettingsAndReboot = false;
+#define STATUSINDICATORSTRING "STA"
+#define VOLUMEINDICATORSTRING "VOL"
+
 namespace
 {
     static constexpr uintptr_t NES_FILE_ADDR = 0x10110000;         // Location of .nes rom or tar archive with .nes roms
@@ -146,17 +150,6 @@ const WORD __not_in_flash_func(NesPalette)[] = {
     0x00f0,  // 3e
     0x00f0}; // 3f
 
-// static queue_t call_queue;
-// typedef struct
-// {
-//     int scanline;
-//     int bufferindex;
-//     bool startframe;
-//     bool endframe;
-// } queue_entry_t;
-
-// static queue_entry_t entry;
-
 static auto frame = 0;
 static uint32_t start_tick_us = 0;
 static uint32_t fps = 0;
@@ -182,6 +175,8 @@ uint32_t getCurrentNVRAMAddr()
     }
     printf("SRAM slot %d\n", slot);
     // Save Games are stored towards address stored roms.
+    // calculate address of save game slot
+    // slot 0 is reserved. (Some state variables are stored at this location)
     uint32_t saveLocation = NES_BATTERY_SAVE_ADDR + SRAM_SIZE * (slot + 1);
     if (saveLocation >= NES_FILE_ADDR)
     {
@@ -191,59 +186,73 @@ uint32_t getCurrentNVRAMAddr()
     return saveLocation;
 }
 
-void __not_in_flash_func(_saveNVRAM)(uint32_t offset, int8_t currentGameIndex, char advance)
-{
-    static_assert((SRAM_SIZE & (FLASH_SECTOR_SIZE - 1)) == 0);
+// Positions in SRAM for storing state variables
+#define STATUSINDICATORPOS 0
+#define GAMEINDEXPOS 3
+#define ADVANCEPOS 4
+#define VOLUMEINDICATORPOS 5
+#define MODEPOS 8
+#define VOLUMEPOS 9
 
-    uint32_t state = NES_BATTERY_SAVE_ADDR - XIP_BASE;
-    uint32_t ints = save_and_disable_interrupts();
-    // Save SRAM
-    flash_range_erase(offset, SRAM_SIZE);
-    flash_range_program(offset, SRAM, SRAM_SIZE);
-    // Save state
-    SRAM[0] = 'S';
-    SRAM[1] = 'T';
-    SRAM[2] = 'A';
-    SRAM[3] = currentGameIndex;
-    SRAM[4] = advance;
-    flash_range_erase(state, SRAM_SIZE);
-    flash_range_program(state, SRAM, SRAM_SIZE);
-
-    restore_interrupts(ints);
-}
-
-/// about 58 Games exist with save battery
+// Save NES Battery RAM (about 58 Games exist with save battery)
 // Problem: First call to saveNVRAM  after power up is ok
 // Second call  causes a crash in flash_range_erase()
-// Because of this we reserve one flash block for saving state of current played game and selected action.
-// Then the RP2040 will be rebooted
+// Because of this we reserve one flash block for saving state of current played game, selected action and sound settings.
+// Then the RP2040 will always be rebooted
 // After reboot, the state will be restored.
 void saveNVRAM(uint8_t statevar, char advance)
 {
-    if (!SRAMwritten)
+    static_assert((SRAM_SIZE & (FLASH_SECTOR_SIZE - 1)) == 0);
+    printf("save SRAM and/or settings\n");
+    if (!SRAMwritten && saveSettingsAndReboot == false)
     {
-        printf("SRAM not updated.\n");
+        printf("  SRAM not updated and no audio settings changed.\n");
         return;
     }
-
-    if (auto addr = getCurrentNVRAMAddr())
+   
+    // Disable core 1 to prevent RP2040 from crashing while writing to flash.
+    printf("  resetting Core 1\n");
+    multicore_reset_core1();
+    uint32_t ints = save_and_disable_interrupts();
+    
+    uint32_t addr = getCurrentNVRAMAddr();
+    uint32_t ofs = addr - XIP_BASE;
+    if (addr)
     {
-        printf("save SRAM\n");
-        printf("  resetting Core 1\n");
-        multicore_reset_core1();
-        auto ofs = addr - XIP_BASE;
-
-        printf("  write flash %x --> %x\n", addr, ofs);
-        _saveNVRAM(ofs, statevar, advance);
-
-        printf("  done\n");
-        printf("  Rebooting...\n");
-
-        // Reboot after SRAM is flashed
-        watchdog_enable(100, 1);
-        while (1)
-            ;
+        printf("  write SRAM to flash %x --> %x\n", addr, ofs);
+        flash_range_erase(ofs, SRAM_SIZE);
+        flash_range_program(ofs, SRAM, SRAM_SIZE);
     }
+    // Save state variables
+    // - Current game index
+    // - Advance (+ Next, - Previous, B Build-in game, R  Reset)
+    // - Speaker mode
+    // - Volume
+    printf("  write state variables and sound settings to flash\n");
+   
+    SRAM[STATUSINDICATORPOS] = STATUSINDICATORSTRING[0];
+    SRAM[STATUSINDICATORPOS + 1] = STATUSINDICATORSTRING[1];
+    SRAM[STATUSINDICATORPOS + 2] = STATUSINDICATORSTRING[2];
+    SRAM[GAMEINDEXPOS] = statevar;
+    SRAM[ADVANCEPOS] = advance;
+    SRAM[VOLUMEINDICATORPOS] = VOLUMEINDICATORSTRING[0];
+    SRAM[VOLUMEINDICATORPOS + 1] = VOLUMEINDICATORSTRING[1];
+    SRAM[VOLUMEINDICATORPOS + 2] = VOLUMEINDICATORSTRING[2];
+    SRAM[MODEPOS] = mode;
+    SRAM[VOLUMEPOS] = volume;
+    // first block of flash is reserved for storing state variables
+    uint32_t state = NES_BATTERY_SAVE_ADDR - XIP_BASE;
+    flash_range_erase(state, SRAM_SIZE);
+    flash_range_program(state, SRAM, SRAM_SIZE);
+
+    printf("  done\n");
+    printf("  Rebooting...\n");
+    restore_interrupts(ints);
+    // Reboot after SRAM is flashed
+    watchdog_enable(100, 1);
+    while (1)
+        ;
+
     SRAMwritten = false;
     // reboot
 }
@@ -351,6 +360,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 
             mode = (mode + 1) % 4;
             showSpeakerMode = SPEAKERMODEFRAMES;
+            saveSettingsAndReboot = true;
 #endif
         }
         if (pushed & GPX)
@@ -364,6 +374,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
             volume = (volume + volume_increment >= FW_VOL_MAX) ? FW_VOL_MAX : volume + volume_increment;
             showVolume = VOLUMEFRAMES;
             volumeOperator = '+';
+            saveSettingsAndReboot = true;
             // set_fw_vol(volume);
             //  rapidFireMask[i] ^= io::GamePadState::Button::A;
         }
@@ -374,6 +385,7 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
                 volume = 0;
             showVolume = VOLUMEFRAMES;
             volumeOperator = '-';
+            saveSettingsAndReboot = true;
             // set_fw_vol(volume);
             //  rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
@@ -466,8 +478,7 @@ void InfoNES_SoundOutput(int samples, BYTE *wave1, BYTE *wave2, BYTE *wave3, BYT
 
     for (i = 0; i < samples; i++)
     {
-        final_wave[fw_wr][i] =
-            ((unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i]);
+        final_wave[fw_wr][i] = (unsigned char)wave1[i] + (unsigned char)wave2[i] + (unsigned char)wave3[i] + (unsigned char)wave4[i] + (unsigned char)wave5[i];
     }
     final_wave[fw_wr][i] = -1;
     fw_wr = 1 - fw_wr;
@@ -598,6 +609,21 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             fpsBuffer += 8;
         }
     }
+
+#ifdef SPEAKER_ENABLED
+    if (showSpeakerMode > 0 && line >= 96 && line < 104)
+    {
+        int l = (strlen(modeStrings[mode]) * 8) / 2;
+        fpsBuffer = lb + 104 - l;
+        int rowInChar = line % 8;
+        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
+        {
+            char aChar = modeStrings[mode][i];
+            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
+            fpsBuffer += 8;
+        }
+    }
+#endif
     if (showVolume > 0 && line >= 120 && line < 128)
     {
         fpsBuffer = lb + 120;
@@ -616,20 +642,6 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             fpsBuffer += 8;
         }
     }
-#ifdef SPEAKER_ENABLED
-    if (showSpeakerMode > 0 && line >= 120 && line < 128)
-    {
-        int l = (strlen(modeStrings[mode]) * 8) / 2;
-        fpsBuffer = lb + 120 - l;
-        int rowInChar = line % 8;
-        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
-        {
-            char aChar = modeStrings[mode][i];
-            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
-            fpsBuffer += 8;
-        }
-    }
-#endif
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
 
@@ -698,7 +710,13 @@ int InfoNES_Menu()
 }
 
 using namespace picosystem;
+#define speakerlevelmax 5669 //pwm wrap + 1
 
+//piezo has a volume drop over a short range of audible sound, this boosts the sound. 
+//*3 is the most I can get with out the top losing resolution. 
+#define piezolevelmax 5669 * 3
+
+#define buffermax 1280
 void fw_callback()
 {
     uint64_t et, nt;
@@ -713,63 +731,74 @@ void fw_callback()
         {
             et = to_us_since_boot(get_absolute_time());
             nt = et + SAMPLE_INTERVAL;
-#if 0
-            if (volume > 0)
-            {
-                // int scaler = 600;
-#endif
+
 #ifdef SPEAKER_ENABLED
-//                int scaler = 20;
-                unsigned int freq = final_wave[fw_rd][i] * volume / FW_VOL_MAX;
+
+
+            if (final_wave[fw_rd][i] > 0)
+            {
+		uint16_t pwm_piezo_level_16 = final_wave[fw_rd][i] * piezolevelmax / (float)buffermax;
+                uint16_t pwm_piezo_level_volume = pwm_piezo_level_16 * volume / FW_VOL_MAX;
+
+//                uint16_t pwm_speaker_level_16 = final_wave[fw_rd][i] * speakerlevelmax / (float)buffermax;
+                uint16_t pwm_speaker_level_volume = final_wave[fw_rd][i] * volume / FW_VOL_MAX; //Percentage of max freq
+
                 switch (mode)
                 {
                 case 0: // piezo only
-                    pwm_set_gpio_level(11, freq * 10);
+                    pwm_set_gpio_level(11, pwm_piezo_level_volume);
                     pwm_set_gpio_level(1, 0);
                     break;
                 case 1: // speaker only
                     pwm_set_gpio_level(11, 0);
-                    pwm_set_gpio_level(1, freq);
+                    pwm_set_gpio_level(1, pwm_speaker_level_volume);
                     break;
                 case 2: // both only
-                    pwm_set_gpio_level(11, freq * 10);
-                    pwm_set_gpio_level(1, freq);
+                    pwm_set_gpio_level(11, pwm_piezo_level_volume);
+                    pwm_set_gpio_level(1, pwm_speaker_level_volume);
                     break;
                 case 3: // mute all
                     pwm_set_gpio_level(11, 0);
                     pwm_set_gpio_level(1, 0);
                     break;
                 }
-#else
-                picosystem::psg_vol((scaler * final_wave[fw_rd][i] * volume) / (255 + scaler / volume));
-#endif
-#if 0
             }
             else
-                picosystem::psg_vol(0);
-#endif
-            while (et < nt)
             {
-                et = to_us_since_boot(get_absolute_time());
-                sleep_us(1);
+                pwm_set_gpio_level(11, 0);
+                pwm_set_gpio_level(1, 0);
             }
+#else
+
+
+            // NewSchool from byte to 16, while maintaining ratio + volume ratio
+            picosystem::psg_vol((final_wave[fw_rd][i] * levelmax / buffermax) * volume / FW_VOL_MAX);
+        
+#endif
+
+        while (et < nt)
+        {
+            et = to_us_since_boot(get_absolute_time());
+            sleep_us(1);
         }
-        final_wave[fw_rd][0] = -1;
-        fw_rd = fw_wr;
+        }
     }
+    final_wave[fw_rd][0] = -1;
+    fw_rd = fw_wr;
+    
 }
 
 int main()
 {
     char errorMessage[30];
+    saveSettingsAndReboot = false;
     strcpy(errorMessage, "");
     _init_hardware();
     //    _start_audio();
     // set_fw_vol(50);
     //    set_fw_vol(0); // for mute
-
+    final_wave[0][0] = final_wave[1][0] = -1; //click fix
     fw_wr = fw_rd = 0;
-    final_wave[0][0] = final_wave[1][0] = -1;
     multicore_launch_core1(fw_callback);
 
     backlight(100);
@@ -826,21 +855,28 @@ int main()
     }
 #endif
 
-    // When system is rebooted after dlashing SRAM, load the saved state from flash and proceed.
+    // When system is rebooted after flashing SRAM, load the saved state and volume from flash and proceed.
     loadState();
-
-    if (watchdog_caused_reboot() && strncmp((char *)SRAM, "STA", 3) == 0)
+    // Restore speaker and volume settings
+    if (strncmp((char *)&SRAM[VOLUMEINDICATORPOS], VOLUMEINDICATORSTRING, 3) == 0)
+    {
+            mode = SRAM[MODEPOS];
+            volume = SRAM[VOLUMEPOS];
+            printf("Restored mode %d, volume %d\n", mode, volume);
+    }
+    if (watchdog_caused_reboot() && strncmp((char *)SRAM, STATUSINDICATORSTRING, 3) == 0)
     {
 
         // Game which caused the reboot
         // When reboot is caused by built-in game, startingGame will be -1
-        int8_t startingGame = (int8_t)SRAM[3];
+        int8_t startingGame = (int8_t)SRAM[GAMEINDEXPOS];
         printf("Game caused reboot: %d\n", startingGame);
+       
         // + start next Game
         // - start previous game
         // R reset to menu
         // B Start built-in Game
-        char advance = (char)SRAM[4];
+        char advance = (char)SRAM[ADVANCEPOS];
         int tmpGame = startingGame;
         // When coming from built-in game, just start the first game.
         if (tmpGame == -1 && advance != 'R')
@@ -853,13 +889,15 @@ int main()
             if (advance == '-')
                 romSelector_.prev();
         }
-        if (advance == 'B')
+        if (advance == 'B') {
             romSelector_.selectcustomrom();
+        }
         if (advance == 'R')
         {
             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage, true));
         }
         prevButtons = -1;
+      
     }
     else
     {
@@ -875,6 +913,10 @@ int main()
         InfoNES_Main();
         if (jumptomenu)
         {
+            pwm_set_gpio_level(11, 0);
+#ifdef SPEAKER_ENABLED
+            pwm_set_gpio_level(1, 0);
+#endif //fix sound continue from exit to menu while playing a game. 
             romSelector_.setRomIndex(menu(NES_FILE_ADDR, errorMessage));
         }
     }

@@ -169,7 +169,7 @@ void InfoNES_pAPUHsync(bool enabled);
 /*-------------------------------------------------------------------*/
 extern int ApuQuality;
 #define pAPU_QUALITY 3 // 44,100 Hz
-#define SAMPLE_INTERVAL 22 // 1,000,000 us / 44,100 Hz
+#define SAMPLE_INTERVAL 22
 
 /*-------------------------------------------------------------------*/
 /*  Rectangle Wave #1 resources                                      */
