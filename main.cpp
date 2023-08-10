@@ -710,11 +710,8 @@ int InfoNES_Menu()
 }
 
 using namespace picosystem;
-#define speakerlevelmax 5669 //pwm wrap + 1
 
-//piezo has a volume drop over a short range of audible sound, this boosts the sound. 
-//*3 is the most I can get with out the top losing resolution. 
-#define piezolevelmax 5669 * 3
+#define piezolevelmax 12800 * 2.8f
 
 #define buffermax 1280
 void fw_callback()
@@ -740,8 +737,7 @@ void fw_callback()
                 uint16_t pwm_piezo_level_16 = final_wave[fw_rd][i] * piezolevelmax / (float)buffermax;
                 uint16_t pwm_piezo_level_volume = pwm_piezo_level_16 * volume / FW_VOL_MAX;
 
-                uint16_t pwm_speaker_level_16 = final_wave[fw_rd][i] * speakerlevelmax / (float)buffermax;
-                uint16_t pwm_speaker_level_volume = pwm_speaker_level_16 * volume / FW_VOL_MAX; //Percentage of max freq
+                uint16_t pwm_speaker_level_volume = final_wave[fw_rd][i] * volume / FW_VOL_MAX; //Percentage of max freq
 
                 switch (mode)
                 {
