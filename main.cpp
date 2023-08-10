@@ -711,7 +711,7 @@ int InfoNES_Menu()
 
 using namespace picosystem;
 
-#define piezolevelmax 12800 * 2.8f
+#define piezolevelmax 12800 
 
 #define buffermax 1280
 void fw_callback()
@@ -734,7 +734,12 @@ void fw_callback()
 
             if (final_wave[fw_rd][i] > 0)
             {
-                uint16_t pwm_piezo_level_16 = final_wave[fw_rd][i] * piezolevelmax / (float)buffermax;
+                uint16_t pwm_piezo_level_16 = final_wave[fw_rd][i] * piezolevelmax * 2.8f / (float)buffermax;
+                //cut off clipping
+                if (pwm_piezo_level_16 > 12800) {
+                    pwm_piezo_level_16 = 12800;
+                }
+             
                 uint16_t pwm_piezo_level_volume = pwm_piezo_level_16 * volume / FW_VOL_MAX;
 
                 uint16_t pwm_speaker_level_volume = final_wave[fw_rd][i] * volume / FW_VOL_MAX; //Percentage of max freq
