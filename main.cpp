@@ -41,13 +41,13 @@ int final_wave[2][735 + 1]; /* 44100 (just in case)/ 60 = 735 samples per sync *
 
 // change volume
 #define FW_VOL_MAX 100
-int volume = 50;
+int volume = 100;
 unsigned int volume_increment = 10;
 #define VOLUMEFRAMES 120   // number of frames the volume is shown
 int showVolume = 0;        // When > 0 volume is shown on screen
 char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or decreased
 #include "font_8x8.h"
-
+float overdrive = 2.8f;
 // speaker
 #ifdef SPEAKER_ENABLED
 int mode = 0; // 0= piezo only 1= speaker only 2= both 3= mute all
@@ -286,12 +286,12 @@ int getbuttons()
            (picosystem::button(picosystem::B) ? GPB : 0) |
            0;
 }
-static DWORD prevButtons = 0;
-static int rapidFireMask = 0;
-static int rapidFireCounter = 0;
-static bool jumptomenu = false;
+  static DWORD prevButtons = 0;
+    static int rapidFireMask = 0;
+    static int rapidFireCounter = 0;
+    static bool jumptomenu = false;
 
-void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
+ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
 {
 
     // moved variables outside function body because prevButtons gets initialized to 0 everytime the function is called.
@@ -302,6 +302,8 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
     // static int rapidFireMask = 0;
     // static int rapidFireCounter = 0;
 
+  
+    
     ++rapidFireCounter;
     bool reset = jumptomenu = false;
 
@@ -369,25 +371,50 @@ void InfoNES_PadState(DWORD *pdwPad1, DWORD *pdwPad2, DWORD *pdwSystem)
             reset = true;
             jumptomenu = true;
         }
-        if (pushed & GPA)
+        if (mode != 3)
         {
-            volume = (volume + volume_increment >= FW_VOL_MAX) ? FW_VOL_MAX : volume + volume_increment;
-            showVolume = VOLUMEFRAMES;
-            volumeOperator = '+';
-            saveSettingsAndReboot = true;
-            // set_fw_vol(volume);
-            //  rapidFireMask[i] ^= io::GamePadState::Button::A;
+            if (pushed & GPA)
+            {
+                volume = (volume + volume_increment >= FW_VOL_MAX) ? FW_VOL_MAX : volume + volume_increment;
+                showVolume = VOLUMEFRAMES;
+                volumeOperator = '+';
+                saveSettingsAndReboot = true;
+                // set_fw_vol(volume);
+                //  rapidFireMask[i] ^= io::GamePadState::Button::A;
+            }
+            if (pushed & GPB)
+            {
+                volume = volume - volume_increment;
+                if (volume < 0)
+                    volume = 0;
+                showVolume = VOLUMEFRAMES;
+                volumeOperator = '-';
+                saveSettingsAndReboot = true;
+                // set_fw_vol(volume);
+                //  rapidFireMask[i] ^= io::GamePadState::Button::B;
+            }
         }
-        if (pushed & GPB)
+        else
         {
-            volume = volume - volume_increment;
-            if (volume < 0)
-                volume = 0;
-            showVolume = VOLUMEFRAMES;
-            volumeOperator = '-';
-            saveSettingsAndReboot = true;
-            // set_fw_vol(volume);
-            //  rapidFireMask[i] ^= io::GamePadState::Button::B;
+            if (pushed & GPA)
+            {
+                overdrive += 0.1f;
+                showVolume = VOLUMEFRAMES;
+                volumeOperator = '+';
+                //saveSettingsAndReboot = true;
+                // set_fw_vol(volume);
+                //  rapidFireMask[i] ^= io::GamePadState::Button::A;
+            }
+            if (pushed & GPB)
+            {
+                overdrive -= 0.1f;
+               
+                showVolume = VOLUMEFRAMES;
+                volumeOperator = '-';
+                //saveSettingsAndReboot = true;
+                // set_fw_vol(volume);
+                //  rapidFireMask[i] ^= io::GamePadState::Button::B;
+            }
         }
     }
 
@@ -588,7 +615,7 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     drawWorkMeter(line);
 #endif
 
-    char charBuffer[5];
+    char charBuffer[9];
     WORD *fpsBuffer = nullptr;
     WORD fgc = NesPalette[48];
     WORD bgc = NesPalette[15];
@@ -627,12 +654,16 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     if (showVolume > 0 && line >= 120 && line < 128)
     {
         fpsBuffer = lb + 120;
-        // fill charbuffer with 3 digits from volume
+        // fill charbuffer with volume and overdrive. 
         charBuffer[0] = volumeOperator;
         charBuffer[1] = '0' + (volume / 100);
         charBuffer[2] = '0' + ((volume % 100) / 10);
         charBuffer[3] = '0' + (volume % 10);
-        charBuffer[4] = 0;
+        charBuffer[4] = '*';
+        charBuffer[5] = '0' + ((short)overdrive % 10);
+        charBuffer[6] = '.';
+        charBuffer[7] = '0' + ((short)(overdrive * 10) % 10);
+        charBuffer[8] = 0;
 
         int rowInChar = line % 8;
         for (auto i = 0; i < strlen(charBuffer); i++)
@@ -712,7 +743,6 @@ int InfoNES_Menu()
 using namespace picosystem;
 
 #define piezolevelmax 12800 
-
 #define buffermax 1280
 void fw_callback()
 {
@@ -734,7 +764,7 @@ void fw_callback()
 
             if (final_wave[fw_rd][i] > 0)
             {
-                uint16_t pwm_piezo_level_16 = final_wave[fw_rd][i] * piezolevelmax * 2.8f / (float)buffermax;
+                uint16_t pwm_piezo_level_16 = final_wave[fw_rd][i] * piezolevelmax * overdrive / (float)buffermax;
                 //cut off clipping
                 if (pwm_piezo_level_16 > 12800) {
                     pwm_piezo_level_16 = 12800;
@@ -742,8 +772,10 @@ void fw_callback()
              
                 uint16_t pwm_piezo_level_volume = pwm_piezo_level_16 * volume / FW_VOL_MAX;
 
-                uint16_t pwm_speaker_level_volume = final_wave[fw_rd][i] * volume / FW_VOL_MAX; //Percentage of max freq
-
+                uint16_t pwm_speaker_level_volume = final_wave[fw_rd][i] * overdrive * volume / FW_VOL_MAX; //Percentage of max freq
+                if (pwm_speaker_level_volume > 1280) {
+                    pwm_speaker_level_volume = 1280;
+                }
                 switch (mode)
                 {
                 case 0: // piezo only
