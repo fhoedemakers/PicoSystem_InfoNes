@@ -18,6 +18,16 @@ See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/READ
 
 ## Release History
 
+### 1.0.0 (2023-08-13)
+
+Fixes:
+
+- improved audio for second speaker.
+
+Features
+
+- Speaker selection and volume settings are saved now. You must reset to menu (Y + X) or toggle game (Y + Left, Y + Right or Y + UP) for this to work.
+
 ### 0.9-alpha (2023-08-03)
 
 Fixes:
