@@ -22,7 +22,7 @@ See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/READ
 
 Fixes:
 
-- improved audio for second speaker.
+- improved audio.
 
 Features
 
