@@ -26,7 +26,7 @@ Fixes:
 
 Features
 
-- Speaker selection and volume settings are saved now. You must reset to menu (Y + X) or toggle game (Y + Left, Y + Right or Y + UP) for this to work.
+- Speaker selection and volume settings are saved now. You must reset to menu (Y + X) or toggle game (Y + Left, Y + Right or Y + Up) for this to work.
 
 ### 0.9-alpha (2023-08-03)
 
