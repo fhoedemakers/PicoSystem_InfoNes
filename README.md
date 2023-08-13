@@ -137,7 +137,7 @@ The original Nintendo Entertainment System has a resolution of 256x240 pixels. T
 ## Credits
 InfoNes is programmed by [Jay Kumogata](https://github.com/jay-kumogata/InfoNES) and ported for DVI output to the Raspberry PI Pico by [Shuichi Takano](https://github.com/shuichitakano/pico-infones). I used the port of Shuichi Takano as a starting point for this project.
 
-Sound programmming by @newschooldev and @Layer812
+Sound programmming by [newschooldev](https://github.com/newschooldev) and [Layer812](https://github.com/Layer812)
 
 ## Things to do
 
