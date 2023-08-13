@@ -123,6 +123,8 @@ picotool load games.tar -t bin -o 0x10110000
 - Y + A: Volume up
 - Y + B: Volume down
 
+> Speaker selection and volume level will be saved, but only when you reset to menu ( X + Y ) or toggle between games (Y + Left, Y + Right, Y + Up). Powering-off the device will not save these settings.
+
 ### In-Menu
 - Up/DOWN: Scroll through list
 - A : Start selected game
@@ -135,7 +137,7 @@ The original Nintendo Entertainment System has a resolution of 256x240 pixels. T
 ## Credits
 InfoNes is programmed by [Jay Kumogata](https://github.com/jay-kumogata/InfoNES) and ported for DVI output to the Raspberry PI Pico by [Shuichi Takano](https://github.com/shuichitakano/pico-infones). I used the port of Shuichi Takano as a starting point for this project.
 
-Sound programmming by @newschooldev and @Layer812
+Sound programmming by [newschooldev](https://github.com/newschooldev) and [Layer812](https://github.com/Layer812)
 
 ## Things to do
 
