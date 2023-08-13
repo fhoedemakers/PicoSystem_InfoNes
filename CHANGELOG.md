@@ -22,7 +22,7 @@ See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/READ
 
 Fixes:
 
-- improved audio.
+- improved audio. [@newschooldev}(https://github.com/newschooldev) and  [@Layer812](https://github.com/Layer812)
 
 Features
 
