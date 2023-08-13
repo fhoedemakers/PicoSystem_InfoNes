@@ -822,9 +822,7 @@ int main()
     saveSettingsAndReboot = false;
     strcpy(errorMessage, "");
     _init_hardware();
-    //    _start_audio();
-    // set_fw_vol(50);
-    //    set_fw_vol(0); // for mute
+ 
     final_wave[0][0] = final_wave[1][0] = -1; //click fix
     fw_wr = fw_rd = 0;
     multicore_launch_core1(fw_callback);
@@ -834,7 +832,7 @@ int main()
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
 
     stdio_init_all();
-    // printf("Start program, flash size = %d\n", PICO_FLASH_SIZE_BYTES);
+   
     printf("Start program\n");
 
 #ifdef LED_ENABLED
@@ -842,7 +840,7 @@ int main()
     gpio_set_dir(LED_PIN, GPIO_OUT);
     gpio_put(LED_PIN, 1);
 #endif
-    // romSelector_.init(NES_FILE_ADDR);
+  
 
     // util::dumpMemory((void *)NES_FILE_ADDR, 1024);
 
