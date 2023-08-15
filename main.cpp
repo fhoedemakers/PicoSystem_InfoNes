@@ -48,6 +48,13 @@ int showVolume = 0;        // When > 0 volume is shown on screen
 char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or decreased
 #include "font_8x8.h"
 float overdrive = 1.0f; 
+//micomenu
+bool micromenu = false;
+char valueString[] = "---------- "; //inserts | based on value. 
+int menu_selected = 0;//audio volume brightness, a go b back
+int menu_subselection = -1; //used for audio 0 s, 1 r, 2 w; and mode 0, piezo,1 speaker,2 both, 3 mute
+const char* menuStrings[] = { "Exit","Rapid A", "Rapid B","Backlight"};
+uint8_t backlight_value = 100;
 // speaker
 #ifdef SPEAKER_ENABLED
 int mode = 0; // 0= piezo only 1= speaker only 2= both 3= mute all
@@ -302,14 +309,14 @@ int getbuttons()
     // static int rapidFireMask = 0;
     // static int rapidFireCounter = 0;
 
-  
+     int v = getbuttons();
     
     ++rapidFireCounter;
     bool reset = jumptomenu = false;
 
     auto &dst = *pdwPad1;
 
-    int v = getbuttons();
+   
 
     int rv = v;
     if (rapidFireCounter & 2)
@@ -324,10 +331,10 @@ int getbuttons()
 
     auto pushed = v & ~prevButtons;
 
-    if (pushed & GPX)
+    /*if (pushed & GPX)
     {
         printf("%d\n", fps);
-    }
+    }*/
     if (p1 & GPX)
     {
         if (pushed & GPA)
@@ -335,6 +342,65 @@ int getbuttons()
             fps_enabled = !fps_enabled;
             printf("Show fps: %d\n", fps_enabled);
         }
+    }
+    if (p1 && micromenu)
+    {
+        if (p1 & GPUP && !(prevButtons & GPUP))
+        {
+            menu_selected = (menu_selected - 1 < 0) ? 0 : menu_selected - 1;
+        }
+         if (p1 & GPDOWN && !(prevButtons & GPDOWN))
+        {
+            menu_selected = (menu_selected + 1 < std::size(menuStrings)) ? menu_selected + 1 : menu_selected;
+        }
+        if (p1 & GPB)
+        {
+            micromenu = false;
+        }
+        if (p1 & GPA &&!(prevButtons & GPA))
+        {
+            switch (menu_selected)
+            {
+                case 0://exit
+                    micromenu = false;
+                    saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
+                    reset = true;
+                    jumptomenu = true;
+                break;
+                case 1://rapid A
+                    //toggle
+                    rapidFireMask ^= GPA;
+                    break;
+                case 2://rapid B
+                    //toggle
+                    rapidFireMask ^= GPB;
+                    break;
+                    
+
+            }
+        }
+        if (menu_selected==3)//backlight
+        { 
+            if (p1 & GPLEFT && !(prevButtons & GPLEFT))
+            {
+                backlight_value = (backlight_value - 10 <= 0) ? 0 : backlight_value - 10;
+                picosystem::backlight(backlight_value);
+            }
+            if (p1 & GPRIGHT && !(prevButtons & GPRIGHT))
+            {
+                backlight_value = (backlight_value + 10 >= 100) ? 100 : backlight_value + 10;
+                picosystem::backlight(backlight_value);
+            }
+        }
+        /*
+        if (p1 & GPX && ! (p1 & GPY))
+        {
+            micromenu = false;
+            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
+            reset = true;
+            jumptomenu = true;
+           
+        }*/
     }
     if (p1 & GPY)
     {
@@ -367,9 +433,8 @@ int getbuttons()
         }
         if (pushed & GPX)
         {
-            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
-            reset = true;
-            jumptomenu = true;
+            micromenu = true;
+           
         }
 
         if (pushed & GPA)
@@ -585,8 +650,19 @@ void __not_in_flash_func(DisplayChar)(WORD *buffer, int y, char c, WORD fgColor,
         fontSlice >>= 1;
     }
 }
-void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
+
+void __not_in_flash_func(DisplayText)(const char* charBuffer,int e , WORD* fpsBuffer, WORD fgc, WORD bgc)
 {
+
+    for (auto i = 0; i < strlen(charBuffer); i++)
+    {
+        char aChar = charBuffer[i];
+        DisplayChar(fpsBuffer, e, aChar, fgc, bgc);
+        fpsBuffer += 8;
+    }
+}
+void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
+{ 
 #if !defined(NDEBUG)
     util::WorkMeterMark(0xffff);
     drawWorkMeter(line);
@@ -596,7 +672,7 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     WORD *fpsBuffer = nullptr;
     WORD fgc = NesPalette[48];
     WORD bgc = NesPalette[15];
-
+  
     if (fps_enabled && line >= 8 && line < 16)
     {
 
@@ -605,32 +681,19 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         charBuffer[0] = '0' + (fps / 10);
         charBuffer[1] = '0' + (fps % 10);
         charBuffer[2] = 0;
+        DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+        /*
         int rowInChar = line % 8;
         for (auto i = 0; i < strlen(charBuffer); i++)
         {
             char aChar = charBuffer[i];
             DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
             fpsBuffer += 8;
-        }
-    }
-
-#ifdef SPEAKER_ENABLED
-    if (showSpeakerMode > 0 && line >= 96 && line < 104)
+        }*/
+    } 
+    if (showVolume > 0 && line >= 16 && line < 24)
     {
-        int l = (strlen(modeStrings[mode]) * 8) / 2;
-        fpsBuffer = lb + 104 - l;
-        int rowInChar = line % 8;
-        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
-        {
-            char aChar = modeStrings[mode][i];
-            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
-            fpsBuffer += 8;
-        }
-    }
-#endif
-    if (showVolume > 0 && line >= 120 && line < 128)
-    {
-        fpsBuffer = lb + 120;
+        fpsBuffer = lb + 16;
         // fill charbuffer with volume and overdrive. 
         charBuffer[0] = volumeOperator;
         charBuffer[1] = '0' + (volume / 100);
@@ -641,15 +704,99 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         charBuffer[6] = '.';
         charBuffer[7] = '0' + ((short)(overdrive * 10) % 10);
         charBuffer[8] = 0;
-
-        int rowInChar = line % 8;
+        DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+      /*  int rowInChar = line % 8;
         for (auto i = 0; i < strlen(charBuffer); i++)
         {
             char aChar = charBuffer[i];
             DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
             fpsBuffer += 8;
-        }
+        }*/
     }
+    if (micromenu) {
+
+        if (line >= 80 && line < 88)
+        {
+            fpsBuffer = lb + 80;
+            //menu title
+            DisplayText("Micro Menu",line % 8, fpsBuffer, fgc, bgc);
+           
+        }
+        if (line >= 96 && line < 104)
+        {
+            fpsBuffer = lb + 96;
+            DisplayText(menuStrings[menu_selected], line % 8, fpsBuffer, fgc, bgc);
+          
+
+        }
+        if (line >= 112 && line < 120)
+        {
+            fpsBuffer = lb + 112;
+            //menu value display
+
+            switch (menu_selected)
+            {
+            case 0://exit
+                DisplayText("A Quit, B Close", line % 8, fpsBuffer, fgc, bgc);
+                break;
+            case 1://rapid A
+                if (rapidFireMask & GPA) {
+                    DisplayText("Rapid A On", line % 8, fpsBuffer, fgc, bgc);
+                }
+                else
+                {
+                    DisplayText("Rapid A Off", line % 8, fpsBuffer, fgc, bgc);
+                }
+                break;
+            case 2://rapid B
+                if (rapidFireMask & GPB) {
+                    DisplayText("Rapid B On", line % 8, fpsBuffer, fgc, bgc);
+                }
+                else
+                {
+                    DisplayText("Rapid B Off", line % 8, fpsBuffer, fgc, bgc);
+                }
+
+                break;
+
+
+            }
+        }
+        if (line >= 120 && line < 128)
+        {
+            switch (menu_selected)
+            {
+            case 3://backlight
+                fpsBuffer = lb + 120;
+                //menu switch case here. 
+                int targetvalue = backlight_value / 10;
+                //min max ratio % 10 - 1 , insert '|' into a array of "---------"
+                char* vs = valueString;
+
+                valueString[targetvalue % 10] = '|';
+                DisplayText(valueString, line % 8, fpsBuffer, fgc, bgc);
+                break;
+            }
+        }
+
+    }
+#ifdef SPEAKER_ENABLED
+    if (showSpeakerMode > 0 && line >= 96 && line < 104)
+    {
+        int l = (strlen(modeStrings[mode]) * 8) / 2;
+        fpsBuffer = lb + 104 - l;
+        DisplayText(modeStrings[mode], line % 8, fpsBuffer, fgc, bgc);
+       /* int rowInChar = line % 8;
+        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
+        {
+            char aChar = modeStrings[mode][i];
+            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
+            fpsBuffer += 8;
+        }
+        */
+    }
+#endif
+  
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
 
@@ -712,6 +859,10 @@ bool loadAndReset()
 
 int InfoNES_Menu()
 {
+
+    //micro menu
+    if (micromenu)
+        return 0;
     // InfoNES_Main() のループで最初に呼ばれる
     return loadAndReset() ? 0 : -1;
     // return 0;
@@ -827,7 +978,7 @@ int main()
     fw_wr = fw_rd = 0;
     multicore_launch_core1(fw_callback);
 
-    backlight(100);
+    backlight(backlight_value);
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
 
