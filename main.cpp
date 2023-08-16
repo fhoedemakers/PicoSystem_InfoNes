@@ -50,7 +50,7 @@ char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or d
 float overdrive = 1.0f; 
 //micomenu
 bool micromenu = false;
-char valueString[] = "---------- "; //inserts | based on value. 
+char valueString[] = "---------- "; //inserts | based on value.
 int menu_selected = 0;//audio volume brightness, a go b back
 int menu_subselection = -1; //used for audio 0 s, 1 r, 2 w; and mode 0, piezo,1 speaker,2 both, 3 mute
 const char* menuStrings[] = { "Exit","Rapid A", "Rapid B","Backlight"};
@@ -673,16 +673,33 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     drawWorkMeter(line);
 #endif
 
-    char charBuffer[9];
+    
     WORD *fpsBuffer = nullptr;
     WORD fgc = NesPalette[48];
     WORD bgc = NesPalette[15];
-  
-    if (fps_enabled && line >= 8 && line < 16)
+    int bat = picosystem::battery();
+    if (bat < 11 && !micromenu)
+    {
+        if (line >= 8 && line < 16)
+        {
+            char charBuffer[9];
+            charBuffer[0] = 'B';
+            charBuffer[1] = 'A';
+            charBuffer[2] = 'T';
+            charBuffer[3] = '[';
+            charBuffer[4] = '0' + (bat / 100);
+            charBuffer[5] = '0' + ((bat % 100) / 10);
+            charBuffer[6] = '0' + (bat % 10);
+            charBuffer[7] = ']';
+            charBuffer[8] = 0;
+            DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+        }
+    }
+    if (fps_enabled && line >= 24 && line < 32)
     {
 
-        fpsBuffer = lb + 8;
-
+        fpsBuffer = lb + 180;
+        char charBuffer[3];
         charBuffer[0] = '0' + (fps / 10);
         charBuffer[1] = '0' + (fps % 10);
         charBuffer[2] = 0;
@@ -696,10 +713,11 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             fpsBuffer += 8;
         }*/
     } 
-    if (showVolume > 0 && line >= 16 && line < 24)
+    if (showVolume > 0 && line >= 40 && line < 48)
     {
-        fpsBuffer = lb + 16;
+        fpsBuffer = lb + 115;
         // fill charbuffer with volume and overdrive. 
+        char charBuffer[9];
         charBuffer[0] = volumeOperator;
         charBuffer[1] = '0' + (volume / 100);
         charBuffer[2] = '0' + ((volume % 100) / 10);
@@ -719,7 +737,21 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         }*/
     }
     if (micromenu) {
-
+        if (line >= 8 && line < 16)
+        {
+            fpsBuffer = lb + 180;
+            char charBuffer[9];
+            charBuffer[0] = 'B';
+            charBuffer[1] = 'A';
+            charBuffer[2] = 'T';
+            charBuffer[3] = '[';
+            charBuffer[4] = '0' + (bat / 100);
+            charBuffer[5] = '0' + ((bat % 100) / 10);
+            charBuffer[6] = '0' + (bat % 10);
+            charBuffer[7] = ']';
+            charBuffer[8] = 0;
+            DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+        }
         if (line >= 80 && line < 88)
         {
             fpsBuffer = lb + 80;
@@ -729,14 +761,14 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         }
         if (line >= 96 && line < 104)
         {
-            fpsBuffer = lb + 96;
+            fpsBuffer = lb + 80;
             DisplayText(menuStrings[menu_selected], line % 8, fpsBuffer, fgc, bgc);
           
 
         }
         if (line >= 112 && line < 120)
         {
-            fpsBuffer = lb + 112;
+            fpsBuffer = lb + 60;
             //menu value display
 
             switch (menu_selected)
@@ -772,11 +804,11 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             switch (menu_selected)
             {
             case 3://backlight
-                fpsBuffer = lb + 120;
+                fpsBuffer = lb + 60;
                 //menu switch case here. 
                 int targetvalue = backlight_value / 10;
                 //min max ratio % 10 - 1 , insert '|' into a array of "---------"
-                char* vs = valueString;
+                char valueString[] = "---------- "; //inserts | based on value.
 
                 valueString[targetvalue % 10] = '|';
                 DisplayText(valueString, line % 8, fpsBuffer, fgc, bgc);
