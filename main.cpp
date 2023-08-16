@@ -200,6 +200,7 @@ uint32_t getCurrentNVRAMAddr()
 #define VOLUMEINDICATORPOS 5
 #define MODEPOS 8
 #define VOLUMEPOS 9
+#define BACKLIGHTPOS 10
 
 // Save NES Battery RAM (about 58 Games exist with save battery)
 // Problem: First call to saveNVRAM  after power up is ok
@@ -247,6 +248,8 @@ void saveNVRAM(uint8_t statevar, char advance)
     SRAM[VOLUMEINDICATORPOS + 2] = VOLUMEINDICATORSTRING[2];
     SRAM[MODEPOS] = mode;
     SRAM[VOLUMEPOS] = volume;
+
+    SRAM[BACKLIGHTPOS] = backlight_value;
     // first block of flash is reserved for storing state variables
     uint32_t state = NES_BATTERY_SAVE_ADDR - XIP_BASE;
     flash_range_erase(state, SRAM_SIZE);
@@ -292,6 +295,17 @@ int getbuttons()
            (picosystem::button(picosystem::A) ? GPA : 0) |
            (picosystem::button(picosystem::B) ? GPB : 0) |
            0;
+}
+void RomMenu()
+{
+    micromenu = false;
+    saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
+
+    pwm_set_gpio_level(11, 0);
+
+#ifdef SPEAKER_ENABLED
+    pwm_set_gpio_level(1, 0);
+#endif
 }
   static DWORD prevButtons = 0;
     static int rapidFireMask = 0;
@@ -362,10 +376,10 @@ int getbuttons()
             switch (menu_selected)
             {
                 case 0://exit
-                    micromenu = false;
-                    saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
                     reset = true;
                     jumptomenu = true;
+                    RomMenu();
+                   
                 break;
                 case 1://rapid A
                     //toggle
@@ -392,15 +406,6 @@ int getbuttons()
                 picosystem::backlight(backlight_value);
             }
         }
-        /*
-        if (p1 & GPX && ! (p1 & GPY))
-        {
-            micromenu = false;
-            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
-            reset = true;
-            jumptomenu = true;
-           
-        }*/
     }
     if (p1 & GPY)
     {
@@ -862,8 +867,11 @@ int InfoNES_Menu()
 
     //micro menu
     if (micromenu)
+    {
+      
         return 0;
-    // InfoNES_Main() のループで最初に呼ばれる
+    }
+    // InfoNES_Main() のループで最初に呼ばれる is called first in the loop of
     return loadAndReset() ? 0 : -1;
     // return 0;
 }
@@ -950,8 +958,42 @@ void fw_callback()
 #else
 
 
-            // needs update. 
-            picosystem::psg_vol((final_wave[fw_rd][i] * piezolevelmax / (float)buffermax) * volume / FW_VOL_MAX);
+            if (final_wave[fw_rd][i] > 0)
+            {
+                //volume setting 0-50 : 0-100 volume output
+                //volume 51-100 : 1.1 - 4.0 overdrive multiplyer. 
+                uint16_t volumelevel = final_wave[fw_rd][i];
+                uint16_t pwm_piezo_level_volume;
+
+                if (volume > 0 && volume < 51)
+                {
+                    //0-50
+                    pwm_piezo_level_volume = (volumelevel * piezolevelmax / (float)buffermax) * (volume * 2) / FW_VOL_MAX;
+                     overdrive = 1.0f;//for display
+                }
+                else if (volume > 50)
+                {
+                    overdrive = (((volume - 50) * 2.92f) / (FW_VOL_MAX * 0.5f)) + 1.08f; //0.02 - 1 * 2.92f + 1.08f = 1.1-4.0f
+                    //100 volume so no reduction. * overdrive 
+                    pwm_piezo_level_volume = ceil(volumelevel * overdrive * piezolevelmax / (float)buffermax);
+                    //clipping 
+                    if (pwm_piezo_level_volume > piezolevelmax) {
+                        pwm_piezo_level_volume = piezolevelmax;
+                    }
+                 
+                }
+                else {
+                    pwm_piezo_level_volume = 0;
+                   
+                }
+                pwm_set_gpio_level(11, pwm_piezo_level_volume);
+                
+            }
+            else
+            {
+                pwm_set_gpio_level(11, 0);
+                
+            }
         
 #endif
 
@@ -1034,11 +1076,18 @@ int main()
 
     // When system is rebooted after flashing SRAM, load the saved state and volume from flash and proceed.
     loadState();
+    // Restore backlight
+    if (SRAM[BACKLIGHTPOS] > 0) //wont restore a off screen or if value was never set. 
+    {
+        backlight_value = SRAM[BACKLIGHTPOS];
+        backlight(backlight_value);
+    }
     // Restore speaker and volume settings
     if (strncmp((char *)&SRAM[VOLUMEINDICATORPOS], VOLUMEINDICATORSTRING, 3) == 0)
     {
             mode = SRAM[MODEPOS];
             volume = SRAM[VOLUMEPOS];
+            
             printf("Restored mode %d, volume %d\n", mode, volume);
     }
     if (watchdog_caused_reboot() && strncmp((char *)SRAM, STATUSINDICATORSTRING, 3) == 0)
