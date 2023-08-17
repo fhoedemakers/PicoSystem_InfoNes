@@ -1,4 +1,5 @@
 /*===================================================================*/
+/*===================================================================*/
 /*                                                                   */
 /*  InfoNES.cpp : NES Emulator for Win32, Linux(x86), Linux(PS2)     */
 /*                                                                   */
@@ -616,7 +617,7 @@ void InfoNES_Main()
   /*-------------------------------------------------------------------*/
   /*  To the menu screen                                               */
   /*-------------------------------------------------------------------*/
-  if (InfoNES_Menu() == 0)
+  if (InfoNES_Menu() == 0 )
   {
     
     /*-------------------------------------------------------------------*/
@@ -650,50 +651,51 @@ void __not_in_flash_func(InfoNES_Cycle)()
   for (;;)
   {
     //util::WorkMeterMark(MARKER_START);
+      if (!micromenu)
+      {
+          // Set a flag if a scanning line is a hit in the sprite #0
+          if (SpriteJustHit == PPU_Scanline &&
+              PPU_ScanTable[PPU_Scanline] == SCAN_ON_SCREEN)
+          {
+              // # of Steps to execute before sprite #0 hit
+              int nStep = SPRRAM[SPR_X] * STEP_PER_SCANLINE / NES_DISP_WIDTH;
 
-    // Set a flag if a scanning line is a hit in the sprite #0
-    if (SpriteJustHit == PPU_Scanline &&
-        PPU_ScanTable[PPU_Scanline] == SCAN_ON_SCREEN)
-    {
-      // # of Steps to execute before sprite #0 hit
-      int nStep = SPRRAM[SPR_X] * STEP_PER_SCANLINE / NES_DISP_WIDTH;
+              // Execute instructions
+              K6502_Step(nStep);
 
-      // Execute instructions
-      K6502_Step(nStep);
+              // Set a sprite hit flag
+              if ((PPU_R1 & R1_SHOW_SP) && (PPU_R1 & R1_SHOW_SCR))
+                  PPU_R2 |= R2_HIT_SP;
 
-      // Set a sprite hit flag
-      if ((PPU_R1 & R1_SHOW_SP) && (PPU_R1 & R1_SHOW_SCR))
-        PPU_R2 |= R2_HIT_SP;
+              // NMI is required if there is necessity
+              if ((PPU_R0 & R0_NMI_SP) && (PPU_R1 & R1_SHOW_SP))
+                  NMI_REQ;
 
-      // NMI is required if there is necessity
-      if ((PPU_R0 & R0_NMI_SP) && (PPU_R1 & R1_SHOW_SP))
-        NMI_REQ;
+              // Execute instructions
+              K6502_Step(STEP_PER_SCANLINE - nStep);
+          }
+          else
+          {
+              // Execute instructions
+              K6502_Step(STEP_PER_SCANLINE);
+          }
 
-      // Execute instructions
-      K6502_Step(STEP_PER_SCANLINE - nStep);
-    }
-    else
-    {
-      // Execute instructions
-      K6502_Step(STEP_PER_SCANLINE);
-    }
+          // Frame IRQ in H-Sync
+          FrameStep += STEP_PER_SCANLINE;
+          if (FrameStep > STEP_PER_FRAME && FrameIRQ_Enable)
+          {
+              FrameStep %= STEP_PER_FRAME;
+              IRQ_REQ;
+              APU_Reg[0x15] |= 0x40;
+          }
 
-    // Frame IRQ in H-Sync
-    FrameStep += STEP_PER_SCANLINE;
-    if (FrameStep > STEP_PER_FRAME && FrameIRQ_Enable)
-    {
-      FrameStep %= STEP_PER_FRAME;
-      IRQ_REQ;
-      APU_Reg[0x15] |= 0x40;
-    }
-
-    //util::WorkMeterMark(MARKER_CPU);
-
+          //util::WorkMeterMark(MARKER_CPU);
+      }
     // A mapper function in H-Sync
     MapperHSync();
 
     // A function in H-Sync
-    if (InfoNES_HSync() == -1)
+    if (InfoNES_HSync() == -1) //quit was called
       return; // To the menu screen
 
     // HSYNC Wait
@@ -855,6 +857,7 @@ int __not_in_flash_func(InfoNES_HSync)()
     }
 
     // Exit an emulation if a QUIT button is pushed
+    
     if (PAD_PUSH(PAD_System, PAD_SYS_QUIT))
       return -1; // Exit an emulation
 

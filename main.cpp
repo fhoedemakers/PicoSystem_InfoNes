@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
@@ -49,8 +51,7 @@ char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or d
 #include "font_8x8.h"
 float overdrive = 1.0f; 
 //micomenu
-bool micromenu = false;
-char valueString[] = "---------- "; //inserts | based on value.
+bool micromenu;
 int menu_selected = 0;//audio volume brightness, a go b back
 int menu_subselection = -1; //used for audio 0 s, 1 r, 2 w; and mode 0, piezo,1 speaker,2 both, 3 mute
 const char* menuStrings[] = { "Exit","Rapid A", "Rapid B","Backlight"};
@@ -658,6 +659,7 @@ void __not_in_flash_func(DisplayChar)(WORD *buffer, int y, char c, WORD fgColor,
 
 void __not_in_flash_func(DisplayText)(const char* charBuffer,int e , WORD* fpsBuffer, WORD fgc, WORD bgc)
 {
+    //picosystem::text(charBuffer, 40, e);
 
     for (auto i = 0; i < strlen(charBuffer); i++)
     {
@@ -901,7 +903,7 @@ int InfoNES_Menu()
     if (micromenu)
     {
       
-        return 0;
+        return -1;
     }
     // InfoNES_Main() のループで最初に呼ばれる is called first in the loop of
     return loadAndReset() ? 0 : -1;
@@ -1043,6 +1045,7 @@ void fw_callback()
 
 int main()
 {
+    micromenu = false;
     char errorMessage[30];
     saveSettingsAndReboot = false;
     strcpy(errorMessage, "");

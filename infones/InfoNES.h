@@ -103,7 +103,7 @@ extern BYTE PPU_Scr_H_Byte;
 //extern BYTE PPU_Scr_H_Byte_Next;
 extern BYTE PPU_Scr_H_Bit;
 //extern BYTE PPU_Scr_H_Bit_Next;
-
+extern bool micromenu;
 extern BYTE PPU_Latch_Flag;
 extern WORD PPU_Addr;
 extern WORD PPU_Temp;
