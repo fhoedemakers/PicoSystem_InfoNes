@@ -114,22 +114,28 @@ picotool load games.tar -t bin -o 0x10110000
 - X: is mapped to NES Start
 
 ### In-game
-- Y + X: Open menu
+- Y + X: Opens in-game menu. Browse options with UP/DOWN:
+  - A Back to game list menu (quit), B Resume game (close).
+  - Toggle rapid fire A button. Press A to toggle.
+  - Toggle rapid fire B button. Press A to toggle.
+  - Change brightness. Press LEFT or RIGHT to change.
 - Y + LEFT: Previous game
 - Y + RIGHT: Next Game
 - Y + UP: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
 - Y + Down: Toggle between speakers. (Built-In - Added via Mod - Both - Mute)
-- X + A: Toggle framerate
+- X + A: Toggle framerate.
 - Y + A: Volume up
 - Y + B: Volume down
 
-> Speaker selection and volume level will be saved, but only when you reset to menu ( X + Y ) or toggle between games (Y + Left, Y + Right, Y + Up). Powering-off the device will not save these settings.
+> Speaker selection, volume level and brightness setting will be saved, but only when you reset to menu (X + Y, then A) or toggle between games (Y + Left, Y + Right, Y + Up). Powering-off the device will not save these settings.
 
-### In-Menu
-- Up/DOWN: Scroll through list
+### In-Game list menu
+- Up/DOWN: Scroll through game list
 - A : Start selected game
 - B : Exit menu
 
+## Battery status
+The battery status is shown when activating the in-game menu. When battery level drops to 10 percent or below, the indicator is permanently shown.
 
 ## Screen Resolution
 The original Nintendo Entertainment System has a resolution of 256x240 pixels. The PicoSystem has a resolution of 240x240 pixels. Therefore, on the PicoSystem the first and last 8 Pixels of each horizontal line are not visible.
