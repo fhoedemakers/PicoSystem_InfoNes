@@ -399,12 +399,12 @@ void RomMenu()
             if (p1 & GPLEFT && !(prevButtons & GPLEFT))
             {
                 backlight_value = (backlight_value - 10 <= 0) ? 0 : backlight_value - 10;
-                //picosystem::backlight(backlight_value);
+                picosystem::backlight(backlight_value);
             }
             if (p1 & GPRIGHT && !(prevButtons & GPRIGHT))
             {
                 backlight_value = (backlight_value + 10 >= 100) ? 100 : backlight_value + 10;
-                //picosystem::backlight(backlight_value);
+                picosystem::backlight(backlight_value);
             }
         }
     }
