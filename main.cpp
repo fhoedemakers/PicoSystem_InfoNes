@@ -810,9 +810,9 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
                 //menu switch case here. 
                 int targetvalue = backlight_value / 10;
                 //min max ratio % 10 - 1 , insert '|' into a array of "---------"
-                char valueString[] = "---------- "; //inserts | based on value.
+                char valueString[] = "----------"; //inserts | based on value.
 
-                valueString[targetvalue % 10] = '|';
+                valueString[targetvalue % 11] = '|'; 
                 DisplayText(valueString, line % 8, fpsBuffer, fgc, bgc);
                 break;
             }

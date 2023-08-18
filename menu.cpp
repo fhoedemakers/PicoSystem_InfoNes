@@ -463,7 +463,17 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
                 firstVisibleRowINDEX -= PAGESIZE;
                 if (firstVisibleRowINDEX < 0)
                 {
-                    firstVisibleRowINDEX = romlister.Count() - (PAGESIZE +1);//Wrap attempt
+                    int index = romlister.Count() / (float)PAGESIZE;
+                    int lastpage = romlister.Count() - (index * PAGESIZE);
+                    if (lastpage > 0)
+                    {
+                        firstVisibleRowINDEX = romlister.Count() - lastpage - 1;
+                    }
+                    else
+                    {
+
+                        firstVisibleRowINDEX = romlister.Count() - (PAGESIZE );//Wrap attempt
+                    }
                 }
                 selectedRow = STARTROW;
                 displayRoms(romlister, firstVisibleRowINDEX);
@@ -473,6 +483,10 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
                 if (firstVisibleRowINDEX + PAGESIZE < romlister.Count())
                 {
                     firstVisibleRowINDEX += PAGESIZE;
+                }
+                else
+                {
+                    firstVisibleRowINDEX = 0;
                 }
                 selectedRow = STARTROW;
                 displayRoms(romlister, firstVisibleRowINDEX);
