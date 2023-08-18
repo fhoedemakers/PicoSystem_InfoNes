@@ -18,6 +18,17 @@ See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/READ
 
 ## Release History
 
+### 1.2.0 (2023-08-18)
+
+Fixes
+
+- Various minor fixes and code cleanup.
+
+Features
+
+- Y + X toggles a micro menu. (See README for more info). Presents options for return to gamelist, rapid fire and backlight settings.
+- Batterry indicator shown on low battery.
+
 ### 1.0.0 (2023-08-13)
 
 Fixes:
