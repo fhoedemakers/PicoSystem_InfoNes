@@ -26,8 +26,8 @@ Fixes
 
 Features
 
-- Y + X toggles a micro menu. (See README for more info). Presents options for return to gamelist, rapid fire and backlight settings.
-- Batterry indicator shown on low battery.
+- Y + X toggles an in-game menu. (See README for more info). Presents options for return to gamelist, rapid fire and backlight settings.
+- Baterry indicator shown on low battery.
 
 ### 1.0.0 (2023-08-13)
 
