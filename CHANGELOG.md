@@ -2,6 +2,8 @@
 
 ## General Information
 
+> To go back to the games list menu when in a game, you have to press (Y+X) and then (A). This is because of a newly added in-game menu. 
+
 Comes with Homebrew game Blade Buster. When no rom is loaded, this game starts.
 
 Support for flashing multiple games. In this case a menu is displayed in the emulator.
@@ -11,8 +13,6 @@ A [Micosoft Windows companion application](https://github.com/fhoedemakers/PicoS
 Extract the zip-file **PicoSystemInfoNesLoader.zip** to a folder of choice, then start **PicoSystemInfoNesLoader.exe** in subfolder PicoSystemInfoNesLoader.
 
 ![Screenshot](https://github.com/fhoedemakers/PicoSystemInfoNesLoader/blob/master/assets/Screen.png)
-
-Attention! Base address for uploading rom with picotool has changed again. You have to re-upload your rom.
 
 See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/README.md) for more info.
 
@@ -26,8 +26,8 @@ Fixes
 
 Features
 
-- Y + X toggles an in-game menu. (See README for more info). Presents options for return to gamelist, rapid fire and backlight settings.
-- Baterry indicator shown on low battery.
+- Y + X toggles an in-game menu. (See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/README.md) for more info). Presents options for return to games list, rapid fire and backlight settings.
+- Battery indicator shown on low battery.
 
 ### 1.0.0 (2023-08-13)
 
