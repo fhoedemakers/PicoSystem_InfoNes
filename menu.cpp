@@ -41,6 +41,7 @@ extern const WORD __not_in_flash_func(NesPalette)[];
 
 static int fgcolor = DEFAULT_FGCOLOR;
 static int bgcolor = DEFAULT_BGCOLOR;
+DWORD PAD1_Latch_Menu, PAD1_Prev;
 ROMSelector romSelector_;
 struct charCell
 {
@@ -59,6 +60,7 @@ void RomSelect_SetLineBuffer(WORD *p, WORD size)
 }
 
 static DWORD prevButtons{};
+
 void RomSelect_PadState(DWORD *pdwPad1, bool ignorepushed = false)
 {
 
@@ -227,7 +229,7 @@ void DisplayFatalError(char *error)
 
 void DisplayEmulatorErrorMessage(char *error)
 {
-    DWORD PAD1_Latch;
+    //DWORD PAD1_Latch;
     ClearScreen(screenBuffer, bgcolor);
     putText(0, 0, "Error occured:", fgcolor, bgcolor);
     putText(0, 3, error, fgcolor, bgcolor);
@@ -237,7 +239,7 @@ void DisplayEmulatorErrorMessage(char *error)
         auto frameCount = InfoNES_LoadFrame();
         DrawScreen(-1);
         RomSelect_PadState(&PAD1_Latch);
-        if (PAD1_Latch > 0)
+        if (PAD1_Latch_Menu> 0)
         {
             return;
         }
@@ -246,7 +248,7 @@ void DisplayEmulatorErrorMessage(char *error)
 
 void showSplashScreen()
 {
-    DWORD PAD1_Latch;
+    //DWORD PAD1_Latch;
     char s[SCREEN_COLS];
     ClearScreen(screenBuffer, bgcolor);
 
@@ -301,8 +303,8 @@ void showSplashScreen()
             startFrame = frameCount;
         }
         DrawScreen(-1);
-        RomSelect_PadState(&PAD1_Latch);
-        if (PAD1_Latch > 0 || (frameCount - startFrame) > 500)
+        RomSelect_PadState(&PAD1_Latch_Menu);
+        if (PAD1_Latch_Menu> 0 || (frameCount - startFrame) > 500)
         {
             return;
         }
@@ -328,14 +330,14 @@ void showSplashScreen()
 
 void screenSaver()
 {
-    DWORD PAD1_Latch;
+    //DWORD PAD1_Latch;
     WORD frameCount;
     while (true)
     {
         frameCount = InfoNES_LoadFrame();
         DrawScreen(-1);
-        RomSelect_PadState(&PAD1_Latch);
-        if (PAD1_Latch > 0)
+        RomSelect_PadState(&PAD1_Latch_Menu);
+        if (PAD1_Latch_Menu> 0)
         {
             return;
         }
@@ -354,7 +356,7 @@ static bool errorInSavingRom = false;
 static char *globalErrorMessage;
 static uintptr_t FLASH_ADDRESS;
 static bool showSplash = true;
-
+ 
 int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
 {
 
@@ -366,7 +368,7 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
 
     globalErrorMessage = errorMessage;
 
-    DWORD PAD1_Latch;
+   
 
     int horzontalScrollIndex = 0;
     printf("Starting Menu\n");
@@ -399,24 +401,34 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
     Frens::RomLister::RomEntry *entries;
     displayRoms(romlister, firstVisibleRowINDEX);
     int index = -1;
+
     while (1)
     {
-
+        
         auto frameCount = InfoNES_LoadFrame();
         index = selectedRow - STARTROW + firstVisibleRowINDEX;
         entries = romlister.GetEntries();
         selectedRomOrFolder = (romlister.Count() > 0) ? entries[index].Path : nullptr;
         errorInSavingRom = false;
         DrawScreen(selectedRow);
-        RomSelect_PadState(&PAD1_Latch);
-        if (PAD1_Latch > 0)
+        DWORD padcheck = prevButtons; // is reset in romselect. 
+        
+        RomSelect_PadState(&PAD1_Latch_Menu);
+       // if (PAD1_Latch_Menu == padcheck) // no change
+         //   continue;
+       
+
+        if (PAD1_Latch_Menu> 0)
         {
             totalFrames = frameCount; // Reset screenSaver
             // reset horizontal scroll of highlighted row
             horzontalScrollIndex = 0;
             putText(3, selectedRow, selectedRomOrFolder, fgcolor, bgcolor);
+            if (selectedRomOrFolder)
+            {
 
-            if ((PAD1_Latch & GPUP) == GPUP && selectedRomOrFolder)
+            }
+            if ((PAD1_Latch_Menu& GPUP) && !(padcheck & GPUP))
             {
                 if (selectedRow > STARTROW)
                 {
@@ -431,7 +443,7 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
                     }
                 }
             }
-            else if ((PAD1_Latch & GPDOWN) == GPDOWN && selectedRomOrFolder)
+            else if ((PAD1_Latch_Menu& GPDOWN) && !(padcheck & GPDOWN))
             {
                 if (selectedRow < ENDROW && (index) < romlister.Count() - 1)
                 {
@@ -446,38 +458,52 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
                     }
                 }
             }
-            else if ((PAD1_Latch & GPLEFT) == GPLEFT && selectedRomOrFolder)
+            if ((PAD1_Latch_Menu& GPLEFT) && !(padcheck & GPLEFT))
             {
                 firstVisibleRowINDEX -= PAGESIZE;
                 if (firstVisibleRowINDEX < 0)
+                {
+                    int index = romlister.Count() / (float)PAGESIZE;
+                    int lastpage = romlister.Count() - (index * PAGESIZE);
+                    if (lastpage > 0)
+                    {
+                        firstVisibleRowINDEX = romlister.Count() - lastpage - 1;
+                    }
+                    else
+                    {
+
+                        firstVisibleRowINDEX = romlister.Count() - (PAGESIZE );//Wrap attempt
+                    }
+                }
+                selectedRow = STARTROW;
+                displayRoms(romlister, firstVisibleRowINDEX);
+            }
+            else if ((PAD1_Latch_Menu& GPRIGHT) && !(padcheck & GPRIGHT))
+            {
+                if (firstVisibleRowINDEX + PAGESIZE < romlister.Count())
+                {
+                    firstVisibleRowINDEX += PAGESIZE;
+                }
+                else
                 {
                     firstVisibleRowINDEX = 0;
                 }
                 selectedRow = STARTROW;
                 displayRoms(romlister, firstVisibleRowINDEX);
             }
-            else if ((PAD1_Latch & GPRIGHT) == GPRIGHT && selectedRomOrFolder)
-            {
-                if (firstVisibleRowINDEX + PAGESIZE < romlister.Count())
-                {
-                    firstVisibleRowINDEX += PAGESIZE;
-                }
-                selectedRow = STARTROW;
-                displayRoms(romlister, firstVisibleRowINDEX);
-            }
-            else if ((PAD1_Latch & GPB) == GPB)
+            if ((PAD1_Latch_Menu& GPB) && !(padcheck & GPB))
             {
                 // start emulator with currently loaded game
                 index = -1;
                 break;
             }
-            // else if ((PAD1_Latch & GPY) == GPY && (PAD1_Latch & GPX) != GPX)
+            // else if ((PAD1_Latch_Menu& GPY) == GPY && (PAD1_Latch_Menu& GPX) != GPX)
             // {
             //     // start emulator with currently loaded game
             //     index = -1;
             //     break;
             // }
-            else if ((PAD1_Latch & GPA) == GPA && selectedRomOrFolder)
+            if ((PAD1_Latch_Menu& GPA) && !(padcheck & GPA)) //prevent button hold from micro menu exit. 
             {
                 break;
 
@@ -510,7 +536,7 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
         {
             totalFrames = frameCount;
         }
-        if ((frameCount - totalFrames) > 800)
+        if ((frameCount - totalFrames) > 1200)
         {
             printf("Starting screensaver\n");
             totalFrames = -1;
@@ -519,16 +545,21 @@ int menu(uintptr_t NES_FILE_ADDR, char *errorMessage, bool nosplash)
         }
     }
     // Wait until user has released all buttons
+    //what is the purpose?
+    /*
     while (1)
     {
         InfoNES_LoadFrame();
         DrawScreen(-1);
-        RomSelect_PadState(&PAD1_Latch, true);
-        if (PAD1_Latch == 0)
+        RomSelect_PadState(&PAD1_Latch_Menu, true);
+        if (PAD1_Latch_Menu== 0)
         {
             break;
         }
-    }
+    }*/
+    InfoNES_LoadFrame();
+    DrawScreen(-1);
+    
     if ( index != -1) {
         index = entries[index].Index;
     }

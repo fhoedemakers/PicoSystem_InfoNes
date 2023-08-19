@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
@@ -48,6 +50,12 @@ int showVolume = 0;        // When > 0 volume is shown on screen
 char volumeOperator = '+'; // '+' or '-' to indicate if volume is increased or decreased
 #include "font_8x8.h"
 float overdrive = 1.0f; 
+//micomenu
+bool micromenu;
+int menu_selected = 0;//audio volume brightness, a go b back
+int menu_subselection = -1; //used for audio 0 s, 1 r, 2 w; and mode 0, piezo,1 speaker,2 both, 3 mute
+const char* menuStrings[] = { "Exit","Rapid A", "Rapid B","Backlight"};
+uint8_t backlight_value = 100;
 // speaker
 #ifdef SPEAKER_ENABLED
 int mode = 0; // 0= piezo only 1= speaker only 2= both 3= mute all
@@ -193,6 +201,7 @@ uint32_t getCurrentNVRAMAddr()
 #define VOLUMEINDICATORPOS 5
 #define MODEPOS 8
 #define VOLUMEPOS 9
+#define BACKLIGHTPOS 10
 
 // Save NES Battery RAM (about 58 Games exist with save battery)
 // Problem: First call to saveNVRAM  after power up is ok
@@ -240,6 +249,8 @@ void saveNVRAM(uint8_t statevar, char advance)
     SRAM[VOLUMEINDICATORPOS + 2] = VOLUMEINDICATORSTRING[2];
     SRAM[MODEPOS] = mode;
     SRAM[VOLUMEPOS] = volume;
+
+    SRAM[BACKLIGHTPOS] = backlight_value;
     // first block of flash is reserved for storing state variables
     uint32_t state = NES_BATTERY_SAVE_ADDR - XIP_BASE;
     flash_range_erase(state, SRAM_SIZE);
@@ -286,6 +297,17 @@ int getbuttons()
            (picosystem::button(picosystem::B) ? GPB : 0) |
            0;
 }
+void RomMenu()
+{
+    micromenu = false;
+    saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
+
+    pwm_set_gpio_level(11, 0);
+
+#ifdef SPEAKER_ENABLED
+    pwm_set_gpio_level(1, 0);
+#endif
+}
   static DWORD prevButtons = 0;
     static int rapidFireMask = 0;
     static int rapidFireCounter = 0;
@@ -302,14 +324,14 @@ int getbuttons()
     // static int rapidFireMask = 0;
     // static int rapidFireCounter = 0;
 
-  
+     int v = getbuttons();
     
     ++rapidFireCounter;
     bool reset = jumptomenu = false;
 
     auto &dst = *pdwPad1;
 
-    int v = getbuttons();
+   
 
     int rv = v;
     if (rapidFireCounter & 2)
@@ -324,16 +346,66 @@ int getbuttons()
 
     auto pushed = v & ~prevButtons;
 
-    if (pushed & GPX)
+    /*if (pushed & GPX)
     {
         printf("%d\n", fps);
-    }
+    }*/
     if (p1 & GPX)
     {
         if (pushed & GPA)
         {
             fps_enabled = !fps_enabled;
             printf("Show fps: %d\n", fps_enabled);
+        }
+    }
+    if (p1 && micromenu)
+    {
+        if (p1 & GPUP && !(prevButtons & GPUP))
+        {
+            menu_selected = (menu_selected - 1 < 0) ? 0 : menu_selected - 1;
+        }
+         if (p1 & GPDOWN && !(prevButtons & GPDOWN))
+        {
+            menu_selected = (menu_selected + 1 < std::size(menuStrings)) ? menu_selected + 1 : menu_selected;
+        }
+        if (p1 & GPB)
+        {
+            micromenu = false;
+        }
+        if (p1 & GPA &&!(prevButtons & GPA))
+        {
+            switch (menu_selected)
+            {
+                case 0://exit
+                    reset = true;
+                    jumptomenu = true;
+                    RomMenu();
+                   
+                break;
+                case 1://rapid A
+                    //toggle
+                    rapidFireMask ^= GPA;
+                    break;
+                case 2://rapid B
+                    //toggle
+                    rapidFireMask ^= GPB;
+                    break;
+                    
+
+            }
+        }
+        if (menu_selected==3)//backlight
+        { 
+            if (p1 & GPLEFT && !(prevButtons & GPLEFT))
+            {
+                backlight_value = (backlight_value - 10 <= 0) ? 0 : backlight_value - 10;
+                picosystem::backlight(backlight_value);
+            }
+            if (p1 & GPRIGHT && !(prevButtons & GPRIGHT))
+            {
+                backlight_value = (backlight_value + 10 >= 100) ? 100 : backlight_value + 10;
+                picosystem::backlight(backlight_value);
+            }
         }
     }
     if (p1 & GPY)
@@ -367,9 +439,8 @@ int getbuttons()
         }
         if (pushed & GPX)
         {
-            saveNVRAM(romSelector_.GetCurrentRomIndex(), 'R');
-            reset = true;
-            jumptomenu = true;
+            micromenu = true;
+           
         }
 
         if (pushed & GPA)
@@ -585,53 +656,70 @@ void __not_in_flash_func(DisplayChar)(WORD *buffer, int y, char c, WORD fgColor,
         fontSlice >>= 1;
     }
 }
-void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
+
+void __not_in_flash_func(DisplayText)(const char* charBuffer,int e , WORD* fpsBuffer, WORD fgc, WORD bgc)
 {
+    //picosystem::text(charBuffer, 40, e);
+
+    for (auto i = 0; i < strlen(charBuffer); i++)
+    {
+        char aChar = charBuffer[i];
+        DisplayChar(fpsBuffer, e, aChar, fgc, bgc);
+        fpsBuffer += 8;
+    }
+}
+void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
+{ 
 #if !defined(NDEBUG)
     util::WorkMeterMark(0xffff);
     drawWorkMeter(line);
 #endif
 
-    char charBuffer[9];
+    
     WORD *fpsBuffer = nullptr;
     WORD fgc = NesPalette[48];
     WORD bgc = NesPalette[15];
-
-    if (fps_enabled && line >= 8 && line < 16)
+    int bat = picosystem::battery();
+    if (bat < 11 && !micromenu)
+    {
+        if (line >= 8 && line < 16)
+        {
+            char charBuffer[9];
+            charBuffer[0] = 'B';
+            charBuffer[1] = 'A';
+            charBuffer[2] = 'T';
+            charBuffer[3] = '[';
+            charBuffer[4] = '0' + (bat / 100);
+            charBuffer[5] = '0' + ((bat % 100) / 10);
+            charBuffer[6] = '0' + (bat % 10);
+            charBuffer[7] = ']';
+            charBuffer[8] = 0;
+            DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+        }
+    }
+    if (fps_enabled && line >= 24 && line < 32)
     {
 
-        fpsBuffer = lb + 8;
-
+        fpsBuffer = lb + 180;
+        char charBuffer[3];
         charBuffer[0] = '0' + (fps / 10);
         charBuffer[1] = '0' + (fps % 10);
         charBuffer[2] = 0;
+        DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+        /*
         int rowInChar = line % 8;
         for (auto i = 0; i < strlen(charBuffer); i++)
         {
             char aChar = charBuffer[i];
             DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
             fpsBuffer += 8;
-        }
-    }
-
-#ifdef SPEAKER_ENABLED
-    if (showSpeakerMode > 0 && line >= 96 && line < 104)
+        }*/
+    } 
+    if (showVolume > 0 && line >= 40 && line < 48)
     {
-        int l = (strlen(modeStrings[mode]) * 8) / 2;
-        fpsBuffer = lb + 104 - l;
-        int rowInChar = line % 8;
-        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
-        {
-            char aChar = modeStrings[mode][i];
-            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
-            fpsBuffer += 8;
-        }
-    }
-#endif
-    if (showVolume > 0 && line >= 120 && line < 128)
-    {
-        fpsBuffer = lb + 120;
+        fpsBuffer = lb + 115;
         // fill charbuffer with volume and overdrive. 
+        char charBuffer[9];
         charBuffer[0] = volumeOperator;
         charBuffer[1] = '0' + (volume / 100);
         charBuffer[2] = '0' + ((volume % 100) / 10);
@@ -641,15 +729,114 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
         charBuffer[6] = '.';
         charBuffer[7] = '0' + ((short)(overdrive * 10) % 10);
         charBuffer[8] = 0;
-
-        int rowInChar = line % 8;
+        DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+      /*  int rowInChar = line % 8;
         for (auto i = 0; i < strlen(charBuffer); i++)
         {
             char aChar = charBuffer[i];
             DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
             fpsBuffer += 8;
-        }
+        }*/
     }
+    if (micromenu) {
+        if (line >= 8 && line < 16)
+        {
+            fpsBuffer = lb + 180;
+            char charBuffer[9];
+            charBuffer[0] = 'B';
+            charBuffer[1] = 'A';
+            charBuffer[2] = 'T';
+            charBuffer[3] = '[';
+            charBuffer[4] = '0' + (bat / 100);
+            charBuffer[5] = '0' + ((bat % 100) / 10);
+            charBuffer[6] = '0' + (bat % 10);
+            charBuffer[7] = ']';
+            charBuffer[8] = 0;
+            DisplayText(charBuffer, line % 8, fpsBuffer, fgc, bgc);
+        }
+        if (line >= 80 && line < 88)
+        {
+            fpsBuffer = lb + 80;
+            //menu title
+            DisplayText("Micro Menu",line % 8, fpsBuffer, fgc, bgc);
+           
+        }
+        if (line >= 96 && line < 104)
+        {
+            fpsBuffer = lb + 80;
+            DisplayText(menuStrings[menu_selected], line % 8, fpsBuffer, fgc, bgc);
+          
+
+        }
+        if (line >= 112 && line < 120)
+        {
+            fpsBuffer = lb + 60;
+            //menu value display
+
+            switch (menu_selected)
+            {
+            case 0://exit
+                DisplayText("A Quit, B Close", line % 8, fpsBuffer, fgc, bgc);
+                break;
+            case 1://rapid A
+                if (rapidFireMask & GPA) {
+                    DisplayText("Rapid A On", line % 8, fpsBuffer, fgc, bgc);
+                }
+                else
+                {
+                    DisplayText("Rapid A Off", line % 8, fpsBuffer, fgc, bgc);
+                }
+                break;
+            case 2://rapid B
+                if (rapidFireMask & GPB) {
+                    DisplayText("Rapid B On", line % 8, fpsBuffer, fgc, bgc);
+                }
+                else
+                {
+                    DisplayText("Rapid B Off", line % 8, fpsBuffer, fgc, bgc);
+                }
+
+                break;
+
+
+            }
+        }
+        if (line >= 120 && line < 128)
+        {
+            switch (menu_selected)
+            {
+            case 3://backlight
+                fpsBuffer = lb + 76;
+                //menu switch case here. 
+                int targetvalue = backlight_value / 10;
+                //insert '|' into a array of "-----------"
+                // Each dash is a percentage: 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+                // So 50% would be:  "-----|-----"
+                char valueString[] = "-----------"; //inserts | based on value.
+                valueString[targetvalue ] = '|';
+                DisplayText(valueString, line % 8, fpsBuffer, fgc, bgc);
+                break;
+            }
+        }
+
+    }
+#ifdef SPEAKER_ENABLED
+    if (showSpeakerMode > 0 && line >= 96 && line < 104)
+    {
+        int l = (strlen(modeStrings[mode]) * 8) / 2;
+        fpsBuffer = lb + 104 - l;
+        DisplayText(modeStrings[mode], line % 8, fpsBuffer, fgc, bgc);
+       /* int rowInChar = line % 8;
+        for (auto i = 0; i < strlen(modeStrings[mode]); i++)
+        {
+            char aChar = modeStrings[mode][i];
+            DisplayChar(fpsBuffer, rowInChar, aChar, fgc, bgc);
+            fpsBuffer += 8;
+        }
+        */
+    }
+#endif
+  
     bufferIndex = hw_divider_s32_quotient_inlined(line, SCANLINEBUFFERLINES) & 1;
     lineInBuffer = hw_divider_s32_remainder_inlined(line, SCANLINEBUFFERLINES);
 
@@ -712,7 +899,14 @@ bool loadAndReset()
 
 int InfoNES_Menu()
 {
-    // InfoNES_Main() のループで最初に呼ばれる
+
+    //micro menu
+    if (micromenu)
+    {
+      
+        return -1;
+    }
+    // InfoNES_Main() のループで最初に呼ばれる is called first in the loop of
     return loadAndReset() ? 0 : -1;
     // return 0;
 }
@@ -799,8 +993,42 @@ void fw_callback()
 #else
 
 
-            // needs update. 
-            picosystem::psg_vol((final_wave[fw_rd][i] * piezolevelmax / (float)buffermax) * volume / FW_VOL_MAX);
+            if (final_wave[fw_rd][i] > 0)
+            {
+                //volume setting 0-50 : 0-100 volume output
+                //volume 51-100 : 1.1 - 4.0 overdrive multiplyer. 
+                uint16_t volumelevel = final_wave[fw_rd][i];
+                uint16_t pwm_piezo_level_volume;
+
+                if (volume > 0 && volume < 51)
+                {
+                    //0-50
+                    pwm_piezo_level_volume = (volumelevel * piezolevelmax / (float)buffermax) * (volume * 2) / FW_VOL_MAX;
+                     overdrive = 1.0f;//for display
+                }
+                else if (volume > 50)
+                {
+                    overdrive = (((volume - 50) * 2.92f) / (FW_VOL_MAX * 0.5f)) + 1.08f; //0.02 - 1 * 2.92f + 1.08f = 1.1-4.0f
+                    //100 volume so no reduction. * overdrive 
+                    pwm_piezo_level_volume = ceil(volumelevel * overdrive * piezolevelmax / (float)buffermax);
+                    //clipping 
+                    if (pwm_piezo_level_volume > piezolevelmax) {
+                        pwm_piezo_level_volume = piezolevelmax;
+                    }
+                 
+                }
+                else {
+                    pwm_piezo_level_volume = 0;
+                   
+                }
+                pwm_set_gpio_level(11, pwm_piezo_level_volume);
+                
+            }
+            else
+            {
+                pwm_set_gpio_level(11, 0);
+                
+            }
         
 #endif
 
@@ -818,6 +1046,7 @@ void fw_callback()
 
 int main()
 {
+    micromenu = false;
     char errorMessage[30];
     saveSettingsAndReboot = false;
     strcpy(errorMessage, "");
@@ -827,7 +1056,7 @@ int main()
     fw_wr = fw_rd = 0;
     multicore_launch_core1(fw_callback);
 
-    backlight(100);
+    backlight(backlight_value);
     memset(scanlinebuffer0, 0, sizeof(scanlinebuffer0));
     memset(scanlinebuffer1, 0, sizeof(scanlinebuffer1));
 
@@ -883,11 +1112,18 @@ int main()
 
     // When system is rebooted after flashing SRAM, load the saved state and volume from flash and proceed.
     loadState();
+    // Restore backlight
+    if (SRAM[BACKLIGHTPOS] > 0) //wont restore a off screen or if value was never set. 
+    {
+        backlight_value = SRAM[BACKLIGHTPOS];
+        backlight(backlight_value);
+    }
     // Restore speaker and volume settings
     if (strncmp((char *)&SRAM[VOLUMEINDICATORPOS], VOLUMEINDICATORSTRING, 3) == 0)
     {
             mode = SRAM[MODEPOS];
             volume = SRAM[VOLUMEPOS];
+            
             printf("Restored mode %d, volume %d\n", mode, volume);
     }
     if (watchdog_caused_reboot() && strncmp((char *)SRAM, STATUSINDICATORSTRING, 3) == 0)
