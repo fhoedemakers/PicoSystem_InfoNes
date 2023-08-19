@@ -115,7 +115,7 @@ picotool load games.tar -t bin -o 0x10110000
 
 ### In-game
 - Y + X: Opens in-game menu. Browse options with UP/DOWN:
-  - A Back to game list menu (quit), B Resume game (close).
+  - A Back to games list menu (quit), B Resume game (close).
   - Toggle rapid fire A button. Press A to toggle.
   - Toggle rapid fire B button. Press A to toggle.
   - Change brightness. Press LEFT or RIGHT to change.
@@ -127,7 +127,7 @@ picotool load games.tar -t bin -o 0x10110000
 - Y + A: Volume up
 - Y + B: Volume down
 
-> Speaker selection, volume level and brightness setting will be saved, but only when you reset to menu (X + Y, then A) or toggle between games (Y + Left, Y + Right, Y + Up). Powering-off the device will not save these settings.
+> Speaker selection, volume level and brightness setting will be saved, but only when you reset to the games list menu (X + Y, then A) or toggle between games (Y + Left, Y + Right, Y + Up). Powering-off the device will not save these settings.
 
 ### In-Game list menu
 - Up/DOWN: Scroll through game list
