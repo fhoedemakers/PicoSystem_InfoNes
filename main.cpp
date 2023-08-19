@@ -806,16 +806,14 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             switch (menu_selected)
             {
             case 3://backlight
-                fpsBuffer = lb + 60;
+                fpsBuffer = lb + 76;
                 //menu switch case here. 
                 int targetvalue = backlight_value / 10;
-                //min max ratio % 10 - 1 , insert '|' into a array of "---------"
-                char valueString[] = "----------"; //inserts | based on value.
-                if ( targetvalue > 0 ) {
-                    valueString[(targetvalue % 11) - 1] = '|'; 
-                } else {
-                    valueString[0] = '|';
-                }
+                //insert '|' into a array of "-----------"
+                // Each dash is a percentage: 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+                // So 50% would be:  "-----|-----"
+                char valueString[] = "-----------"; //inserts | based on value.
+                valueString[targetvalue ] = '|';
                 DisplayText(valueString, line % 8, fpsBuffer, fgc, bgc);
                 break;
             }
