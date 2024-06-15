@@ -741,7 +741,9 @@ int __not_in_flash_func(InfoNES_HSync)()
       InfoNES_DrawLine();
      
     } else {
-      InfoNES_MemorySet(WorkLine, 0, 640);
+      // Array out of bounds, WorkLine size is equals to NES_DISP_WIDTH << 1 = 512
+      //InfoNES_MemorySet(WorkLine, 0, 640);
+      InfoNES_MemorySet(WorkLine, 0, NES_DISP_WIDTH << 1);
     }
      InfoNES_PostDrawLine(PPU_Scanline, false);
     //  if (PPU_Scanline >=240) {
