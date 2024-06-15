@@ -18,6 +18,11 @@ See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/READ
 
 ## Release History
 
+### 1.4.0 (2024-06-15)
+
+- Fix memory issue  [tidotua](https://github.com/tidotua)
+- Update Readme
+
 ### 1.2.0 (2023-08-18)
 
 Fixes
