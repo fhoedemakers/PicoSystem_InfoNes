@@ -51,15 +51,6 @@ The speaker must be soldered with the red wire to RX and the black wire to groun
 
 > You can toggle between speakers in-game by the Y + Down button combo.
 
-### Videos with sound
-
-
-
-| hear the difference between speakers  |Show the capabilities of the speaker mod|
-| ------------- | ------------- |
-| [![Video](https://img.youtube.com/vi/BRUByhx4GDo/0.jpg)](https://youtu.be/BRUByhx4GDo) | [![Video](https://img.youtube.com/vi/cA9mOWZZN6I/0.jpg)](https://youtu.be/cA9mOWZZN6I) |
-
-
 ## Software installation
 
 ### flashing the emulator and uploading games to the PicoSystem using a Windows App
