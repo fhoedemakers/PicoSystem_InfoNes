@@ -19,7 +19,7 @@ set(PICOSYSTEM_LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/memmap_picosystem.ld)
 
 target_include_directories(picosystem INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 
-target_link_libraries(picosystem INTERFACE pico_stdlib hardware_pio hardware_spi hardware_pwm hardware_dma hardware_irq hardware_adc hardware_interp)
+target_link_libraries(picosystem INTERFACE pico_stdlib hardware_pio hardware_spi hardware_pwm hardware_dma hardware_irq hardware_adc hardware_interp hardware_clocks)
 
 function(picosystem_executable NAME SOURCES)
   add_executable(

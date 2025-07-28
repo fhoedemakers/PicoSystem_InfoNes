@@ -54,7 +54,7 @@ float overdrive = 1.0f;
 bool micromenu;
 int menu_selected = 0;//audio volume brightness, a go b back
 int menu_subselection = -1; //used for audio 0 s, 1 r, 2 w; and mode 0, piezo,1 speaker,2 both, 3 mute
-const char* menuStrings[] = { "Exit","Rapid A", "Rapid B","Backlight"};
+const char* menuStrings[] = { "Exit","Rapid A", "Rapid B","Backlight","Volume"}; //speaker mode, top 8, bottom 8
 uint8_t backlight_value = 100;
 // speaker
 #ifdef SPEAKER_ENABLED
@@ -407,6 +407,19 @@ void RomMenu()
                 picosystem::backlight(backlight_value);
             }
         }
+        if (menu_selected == 4)//backlight
+        {
+            if (p1 & GPLEFT && !(prevButtons & GPLEFT))
+            {
+                volume = (volume - 10 <= 0) ? 0 : volume - 10;
+                
+            }
+            if (p1 & GPRIGHT && !(prevButtons & GPRIGHT))
+            {
+                volume = (volume + 10 >= 100) ? 100 : volume + 10;
+                
+            }
+        }
     }
     if (p1 & GPY)
     {
@@ -442,7 +455,7 @@ void RomMenu()
             micromenu = true;
            
         }
-
+/* moved to in game menu
         if (pushed & GPA)
         {
             volume = (volume + volume_increment >= FW_VOL_MAX) ? FW_VOL_MAX : volume + volume_increment;
@@ -463,7 +476,7 @@ void RomMenu()
             // set_fw_vol(volume);
             //  rapidFireMask[i] ^= io::GamePadState::Button::B;
         }
-    
+    */
     }
 
     prevButtons = v;
@@ -680,7 +693,7 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
     WORD fgc = NesPalette[48];
     WORD bgc = NesPalette[15];
     int bat = picosystem::battery();
-    if (bat < 11 && !micromenu)
+    if (bat < 45 && !micromenu)
     {
         if (line >= 8 && line < 16)
         {
@@ -806,6 +819,7 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
             switch (menu_selected)
             {
             case 3://backlight
+            {
                 fpsBuffer = lb + 76;
                 //menu switch case here. 
                 int targetvalue = backlight_value / 10;
@@ -813,10 +827,27 @@ void __not_in_flash_func(InfoNES_PostDrawLine)(int line, bool frommenu)
                 // Each dash is a percentage: 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
                 // So 50% would be:  "-----|-----"
                 char valueString[] = "-----------"; //inserts | based on value.
-                valueString[targetvalue ] = '|';
+                valueString[targetvalue] = '|';
                 DisplayText(valueString, line % 8, fpsBuffer, fgc, bgc);
                 break;
             }
+            
+            case 4://volume
+            {
+                fpsBuffer = lb + 76;
+                //menu switch case here. 
+                int vtargetvalue = volume / 10;
+                //insert '|' into a array of "-----------"
+                // Each dash is a percentage: 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+                // So 50% would be:  "-----|-----"
+                char vvalueString[] = "-----------"; //inserts | based on value.
+                vvalueString[vtargetvalue] = '|';
+                DisplayText(vvalueString, line % 8, fpsBuffer, fgc, bgc);
+                break;
+            }
+            }
+        
+
         }
 
     }
