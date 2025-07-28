@@ -110,6 +110,7 @@ picotool load games.tar -t bin -o 0x10110000
   - Toggle rapid fire A button. Press A to toggle.
   - Toggle rapid fire B button. Press A to toggle.
   - Change brightness. Press LEFT or RIGHT to change.
+  - Change Volume. Press UP or DOWN to change.
 - Y + LEFT: Previous game
 - Y + RIGHT: Next Game
 - Y + UP: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
