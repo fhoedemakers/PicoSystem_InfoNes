@@ -17,11 +17,15 @@ Extract the zip-file **PicoSystemInfoNesLoader.zip** to a folder of choice, then
 See [Readme](https://github.com/fhoedemakers/PicoSystem_InfoNes/blob/master/README.md) for more info.
 
 ## Release History
+### 1.5.0  (2025-7-28)
+
+- new library for pico moved hardware/clocks, small fix in build and code. [newschooldev](https://github.com/newschooldev)
+- moved the volume menu to the in game menu [newschooldev](https://github.com/newschooldev)
+- Update GitHub Actions to use checkout@v4 and action-gh-release@v2 
 
 ### 1.4.0 (2024-06-15)
 
 - Fix memory issue  [tidotua](https://github.com/tidotua)
-- Update Readme
 
 ### 1.2.0 (2023-08-18)
 
