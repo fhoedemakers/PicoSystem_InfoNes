@@ -74,7 +74,7 @@ jobs:
 
           - name: Build the project
             run: |
-                 export PICO_SDK_PATH=$HOME/pico-sdk && \
+                 export PICO_SDK_PATH=/datalocal/pico/pico-sdk && \
                  mkdir build && cd build && \
                  cmake .. && \
                  make -j4
