@@ -82,7 +82,7 @@ jobs:
           - name: Show release info using picotool
             run: |
                  export PICO_SDK_PATH=/datalocal/pico/pico-sdk && \
-                 $HOME/picotool/build/picotool info build/${{ env.APP_NAME }}.uf2 && \
+                 /usr/local/bin/picotool info build/${{ env.APP_NAME }}.uf2 && \
                  echo "-----------------------------" 
 
           - name: download latest release of PicoSystemInfoNesLoader.zip
