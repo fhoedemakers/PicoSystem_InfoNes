@@ -81,7 +81,7 @@ jobs:
 
           - name: Show release info using picotool
             run: |
-                 export PICO_SDK_PATH=$HOME/pico-sdk && \
+                 export PICO_SDK_PATH=/datalocal/pico/pico-sdk && \
                  $HOME/picotool/build/picotool info build/${{ env.APP_NAME }}.uf2 && \
                  echo "-----------------------------" 
 
