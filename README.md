@@ -116,8 +116,6 @@ picotool load games.tar -t bin -o 0x10110000
 - Y + UP: Start built-in freeware game [Blade Buster](https://www.rgcd.co.uk/2011/05/blade-buster-nes.html)
 - Y + Down: Toggle between speakers. (Built-In - Added via Mod - Both - Mute)
 - X + A: Toggle framerate.
-- Y + A: Volume up
-- Y + B: Volume down
 
 > Speaker selection, volume level and brightness setting will be saved, but only when you reset to the games list menu (X + Y, then A) or toggle between games (Y + Left, Y + Right, Y + Up). Powering-off the device will not save these settings.
 
