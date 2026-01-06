@@ -222,13 +222,15 @@ void saveNVRAM(uint8_t statevar, char advance)
     // Disable core 1 to prevent RP2040 from crashing while writing to flash.
     printf("  resetting Core 1\n");
     multicore_reset_core1();
+     // Reboot after SRAM is flashed
+    watchdog_enable(400, 1);
     uint32_t ints = save_and_disable_interrupts();
     
     uint32_t addr = getCurrentNVRAMAddr();
     uint32_t ofs = addr - XIP_BASE;
     if (addr)
     {
-        printf("  write SRAM to flash %x --> %x\n", addr, ofs);
+        // printf("  write SRAM to flash %x --> %x\n", addr, ofs);
         flash_range_erase(ofs, SRAM_SIZE);
         flash_range_program(ofs, SRAM, SRAM_SIZE);
     }
@@ -237,7 +239,7 @@ void saveNVRAM(uint8_t statevar, char advance)
     // - Advance (+ Next, - Previous, B Build-in game, R  Reset)
     // - Speaker mode
     // - Volume
-    printf("  write state variables and sound settings to flash\n");
+    // printf("  write state variables and sound settings to flash\n");
    
     SRAM[STATUSINDICATORPOS] = STATUSINDICATORSTRING[0];
     SRAM[STATUSINDICATORPOS + 1] = STATUSINDICATORSTRING[1];
@@ -256,11 +258,10 @@ void saveNVRAM(uint8_t statevar, char advance)
     flash_range_erase(state, SRAM_SIZE);
     flash_range_program(state, SRAM, SRAM_SIZE);
 
-    printf("  done\n");
-    printf("  Rebooting...\n");
+    //printf("  done\n");
+    // printf("  Rebooting...\n");
     restore_interrupts(ints);
-    // Reboot after SRAM is flashed
-    watchdog_enable(100, 1);
+   
     while (1)
         ;
 
